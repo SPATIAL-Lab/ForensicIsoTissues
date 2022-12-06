@@ -1,43 +1,15 @@
-# necessary packages install
-install.packages("wesanderson")
-install.packages("RColorBrewer")
-
 # load packages
-library(wesanderson)
-library(RColorBrewer)
-library(readxl)
-library(ggplot2)
-library(sp)
+library(wesanderson);library(RColorBrewer);library(readxl);library(ggplot2);
+library(sp);library(sf);library(terra);library(rgdal); library(cartography)
 
 #load data
 ForensicTIsoData = read.csv("data/ForensicIsoDataNew.csv")
-
-#Re-load and Re-run of descriptive statistics after addition of Tipple Data
-ForIsoData <-read_xlsx("DataComp_22_11.xlsx")
-FData1 <-read_xlsx("DataComp_22_11.xlsx", sheet = "Individual")
-FData2 <-read_xlsx("DataComp_22_11.xlsx", sheet = "Site")
-FData3 <-read_xlsx("DataComp_22_11.xlsx", sheet = "Sample")
-FData4 <-read_xlsx("DataComp_22_11.xlsx", sheet = "Data")
-Comp1 <-merge(FData2,FData3,by= "Site.ID")
-Comp2 <-merge(Comp1,FData1,by= "Ind.ID")
-Comp3 <-merge(Comp2,FData4,by= "Sample.ID")
-#convert lat and long to numeric
-Comp3$Lat= as.numeric(Comp3$Lat)
-Comp3$Lon= as.numeric(Comp3$Lon)
-ForensicTIsoData <-select(Comp3,1,2,3,5,6,7,8,9,10,11,12,14,15,16,22,23,24,28)
-#get rid of NAs
-ForensicTIsoData =ForensicTIsoData[!is.na(ForensicTIsoData$Lat),]
-ForensicTIsoData =ForensicTIsoData[!is.na(ForensicTIsoData$Lon),]
+#if negative oxygen values are still floating around: 
+ForensicTIsoData <- subset(ForensicTIsoData, Iso.Value >0)
 
 Fspdf =SpatialPointsDataFrame(data.frame(ForensicTIsoData$Lon, ForensicTIsoData$Lat), ForensicTIsoData)
 plot(Fspdf)
 proj4string(Fspdf) <-CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
-
-ForensicTIsoData$Cind = numeric(nrow(ForensicTIsoData))
-ForensicTIsoData$Cind[ForensicTIsoData$Country == "Canada"] = 1
-ForensicTIsoData$Cind[ForensicTIsoData$Country == "USA"] = 2
-ForensicTIsoData$Cind[ForensicTIsoData$Country == "Mexico"] = 3
-
 #Hair and Keratin Stats re-run, only USA, overall, known and assumed 
 #some stats now? Descriptive Stats Take 1 Keratin/Oxygen
 KeratinStats=ForensicTIsoData[ForensicTIsoData$Analyte=="keratin",]
@@ -146,18 +118,15 @@ mean(HairUSASrA1)
 sd(HairUSASrA1)
 range(HairUSASrA1)
 
-library(sf)
-library(terra)
-library(rgdal)
+
 #Make some maps with new Hairs data
-namap = readOGR("PoliticalBoundaries_Shapefiles/boundary_l_v2.shp")
+namap = readOGR("data/PoliticalBoundaries_Shapefiles/boundary_l_v2.shp")
 plot(namap)
 Fspdf=spTransform(Fspdf,crs(namap))
 
 #subset map to get of weird lines, maybe, it worked but still a few weird lines
 namap=namap[namap$COUNTRY %in% c("USA", "CAN USA", "MEX USA", "MEX", "CAN"),]
 plot(namap)
-
 
 plot(Fspdf[Fspdf$Isotope=="d18O" & Fspdf$Element=="hair",],pch=21, col="purple")
 plot(namap, add=TRUE)
@@ -184,6 +153,7 @@ plot(namap, add=TRUE)
 plot(Fspdf[Fspdf$Data.Origin=="known" & Fspdf$Isotope=="d18O" & Fspdf$Element=="hair",], pch=17)
 plot(Fspdf[Fspdf$Data.Origin=="assumed" & Fspdf$Isotope=="d18O" & Fspdf$Element=="hair",], pch=17, col="blue", add=TRUE)
 plot(namap, add=TRUE)
+
 #Map, distribution of Stront hairs
 plot(Fspdf[Fspdf$Data.Origin=="assumed" & Fspdf$Isotope=="87Sr/86Sr" & Fspdf$Element=="hair",], pch=17, col="red")
 plot(Fspdf[Fspdf$Data.Origin=="known" & Fspdf$Isotope=="87Sr/86Sr" & Fspdf$Element=="hair",], pch=17, add=TRUE)
@@ -281,8 +251,6 @@ legendTypo(pos = "bottomleft", title.txt = "d18O Bone Values",
            categ = c("2", "type 2", "type 3", "type 4", "18"),
            nodata = FALSE)
 
-write.csv(ForensicTIsoData, file="ForensicIsoDataNew.csv")
-
 #Organizing data into batches by Isotope, Country, Element etc.
 Oxygen=ForensicTIsoData[ForensicTIsoData$Isotope=="d18O",]
 Stront=ForensicTIsoData[ForensicTIsoData$Isotope=="87Sr/86Sr",]
@@ -306,9 +274,9 @@ MexOHair=MexO[MexO$Element=="hair",]
 MexSrHair=MexSr[MexSr$Element=="hair",]
 
 #New boxplots with Oxygen and Sr Hair data
-boxplot(Iso.Value~Data.Origin, data=HairUSAOxy, main= "USA Oxygen Values", xlab = "Analyte" 
+boxplot(Iso.Value~Data.Origin, data=USAOHair, main= "USA Oxygen Values", xlab = "Analyte" 
         , ylab = "d18O", col= carto.pal("purple.pal"))
-boxplot(Iso.Value~Data.Origin, data=HairUSASr, main= "USA Stronium Values", xlab = "Analyte" 
+boxplot(Iso.Value~Data.Origin, data=USASrHair, main= "USA Stronium Values", xlab = "Analyte" 
         , ylab = "87Sr/86Sr", col= carto.pal("green.pal"))
 
 
@@ -336,8 +304,8 @@ boxplot(Iso.Value~Cind, data = ToothO, main= "Tooth Oxygen Values by Country", n
 boxplot(Iso.Value~Cind, data = ToothSr, main= "Tooth Strontium Values by Country", names = c("Canada", "USA", "Mexico"), xlab = "Country", ylab = "87Sr/86Sr", col= carto.pal("turquoise.pal")) 
 
 ## Only bone data from USA
-boxplot(Iso.Value~Cind, data = BoneO, main= "Tooth Oxygen Values by Country", names = c("Canada", "USA", "Mexico"), xlab = "Country", ylab = "d18O", col= carto.pal("purple.pal"))
-boxplot(Iso.Value~Cind, data = BoneSr, main= "Tooth Strontium Values by Country", names = c("Canada", "USA", "Mexico"), xlab = "Country", ylab = "87Sr/86Sr", col= carto.pal("turquoise.pal")) 
+boxplot(Iso.Value~Cind, data = BoneO, main= "Bone Oxygen Values by Country", names = c("USA"), xlab = "Country", ylab = "d18O", col= carto.pal("purple.pal"))
+boxplot(Iso.Value~Cind, data = BoneSr, main= "Bone Strontium Values by Country", names = c("USA"), xlab = "Country", ylab = "87Sr/86Sr", col= carto.pal("turquoise.pal")) 
 
 boxplot(Iso.Value~Analyte, data = USAO, main= "USA Oxygen Values by Analyte", xlab = "Analyte", ylab = "d18O", col= carto.pal("purple.pal"))
 boxplot(Iso.Value~Analyte, data = USASr, main= "USA Strontium Values by Analyte", xlab = "Analyte", ylab = "87Sr/86Sr", col= carto.pal("turquoise.pal")) 
