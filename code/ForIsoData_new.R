@@ -1,7 +1,17 @@
+# necessary packages install
 install.packages("wesanderson")
-library(wesanderson)
 install.packages("RColorBrewer")
+
+# load packages
+library(wesanderson)
 library(RColorBrewer)
+library(readxl)
+library(ggplot2)
+library(sp)
+
+#load data
+ForensicTIsoData = read.csv("data/ForensicIsoDataNew.csv")
+
 #Re-load and Re-run of descriptive statistics after addition of Tipple Data
 ForIsoData <-read_xlsx("DataComp_22_11.xlsx")
 FData1 <-read_xlsx("DataComp_22_11.xlsx", sheet = "Individual")
@@ -138,6 +148,7 @@ range(HairUSASrA1)
 
 library(sf)
 library(terra)
+library(rgdal)
 #Make some maps with new Hairs data
 namap = readOGR("PoliticalBoundaries_Shapefiles/boundary_l_v2.shp")
 plot(namap)
