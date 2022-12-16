@@ -363,27 +363,57 @@ boxplot(Iso.Value~Data.Origin, data = MexSrHair, main= "Mexico Hair Strontium Va
 boxplot(Iso.Value~Analyte, data = USAO, main= "USA Oxygen Values by Analyte", xlab = "Analyte", ylab = "d18O", col= carto.pal("purple.pal"))
 boxplot(Iso.Value~Analyte, data = USASr, main= "USA Strontium Values by Analyte", xlab = "Analyte", ylab = "87Sr/86Sr", col= carto.pal("turquoise.pal"))
 
-#Biplots (some have codes to change colors from basic, see pretty colors below in#Make pretty section)
-ggplot(data = USAO, aes(x=Iso.Value, y=Lat, color=Element))+geom_point(size=2)+scale_color_manual(values= c("#000080", "#800080", "#008000"))
-ggplot(data = USAO, aes(x=Iso.Value, y=Elev, color=Element))+geom_point(size=2)+scale_color_manual(values=wes_palette(n=3, name="Darjeeling1"))
+#Scatterplots (some have codes to change colors from basic, see pretty colors below in#Make pretty section)
+ggplot(data = USAO, aes(x=Iso.Value, y=Lat, color=Element)) + 
+  geom_point(size=2) + 
+  scale_color_manual(values= c("#000080", "#800080", "#008000")) + 
+  labs(x = )
 
-ggplot(data = USAO, aes(x=Iso.Value, y=Lat, color=Location.Quality, shape=Element))+geom_point()
-ggplot(data = USAO, aes(x=Iso.Value, y=Lat, color=Biomolecule, shape=Element))+geom_point()
+ggplot(data = USAO, aes(x=Iso.Value, y=Elev, color=Element)) + 
+  geom_point(size=2) + 
+  scale_color_manual(values=wes_palette(n=3, name="Darjeeling1"))
 
-ggplot(data = MexO, aes(x=Iso.Value, y=Lat, color=Element))+geom_point(size=2)+scale_color_manual(values= c("#000080", "#800080", "#008000"))
-ggplot(data = MexO, aes(x=Iso.Value, y=Elev, color=Element))+geom_point()
+ggplot(data = USAO, aes(x=Iso.Value, y=Lat, color=Location.Quality, shape=Element)) + 
+  geom_point()
 
-ggplot(data = CanO, aes(x=Iso.Value, y=Lat, color=Element))+geom_point()
-ggplot(data = CanO, aes(x=Iso.Value, y=Elev, color=Element))+geom_point()
+ggplot(data = USAO, aes(x=Iso.Value, y=Lat, color=Biomolecule, shape=Element)) + 
+  geom_point()
+
+ggplot(data = MexO, aes(x=Iso.Value, y=Lat, color=Element)) + 
+  geom_point(size=2) + 
+  scale_color_manual(values= c("#000080", "#800080", "#008000"))
+
+ggplot(data = MexO, aes(x=Iso.Value, y=Elev, color=Element)) + 
+  geom_point()
+
+ggplot(data = CanO, aes(x=Iso.Value, y=Lat, color=Element)) + 
+  geom_point()
+
+ggplot(data = CanO, aes(x=Iso.Value, y=Elev, color=Element)) + 
+  geom_point()
 
 #Somewhat interesting
-ggplot(data = USASr, aes(x=Iso.Value, y=Lat, color=Element))+geom_point()
-ggplot(data = USASr, aes(x=Iso.Value, y=Elev, color=Element))+geom_point()
+ggplot(data = USASr, aes(x=Iso.Value, y=Lat, color=Element)) + 
+  geom_point(size = 3) + 
+  labs(x = expression(paste(""^{87},"Sr/"^86,"Sr")), 
+       y = "Latitude") + 
+  theme(
+    plot.title = element_text(size = 16),
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12)
+  ) + 
+  theme_classic()
 
-ggplot(data = MexSr, aes(x=Iso.Value, y=Lat, color=Element))+geom_point()
-ggplot(data = MexSr, aes(x=Iso.Value, y=Elev, color=Element))+geom_point()
+ggplot(data = USASr, aes(x=Iso.Value, y=Elev, color=Element)) + 
+  geom_point()
 
-##more bi-plots
+ggplot(data = MexSr, aes(x=Iso.Value, y=Lat, color=Element)) + 
+  geom_point()
+
+ggplot(data = MexSr, aes(x=Iso.Value, y=Elev, color=Element)) +
+  geom_point()
+
+##more scatterplots
 ggplot(data = MexSr, aes(x=Iso.Value, y=Lat, color=Element, shape=Data.Origin))+geom_point()
 
 ggplot(data = HairO, aes(x=Iso.Value, y=Lat, color=Country))+geom_point()
