@@ -1,9 +1,8 @@
 
 # Setup -------------------------------------------------------------------
 library(sp); library(rgdal); library(terra)
-library(cartography); library(mapsf); library(RColorBrewer)
-library(wesanderson); 
-library(sf); library(readr); library(tidyverse)
+library(cartography); library(mapsf); library(sf); library(readr);
+library(tidyverse)
 # Chris: added line below to get started. 
 ForensicTIsoData <- read_csv("data/ForensicIsoDataNew.csv", 
                                col_types = cols(...1 = col_skip()))
@@ -11,6 +10,22 @@ Fspdf =SpatialPointsDataFrame(data.frame(ForensicTIsoData$Lon, ForensicTIsoData$
 plot(Fspdf)
 proj4string(Fspdf) <-CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 
+# Changed readOGR file path to assume that wd is base folder not /data
+namap = readOGR("data/PoliticalBoundaries_Shapefiles/boundary_l_v2.shp")
+plot(namap)
+
+namap1 = readOGR("shapefiles/bound_p.shp")
+namap1 = namap1[namap1$COUNTRY %in% c("CAN", "MEX", "USA"), ]
+namap2 <- spTransform(namap1, CRS(
+  "+proj=aea +lat_1=29.5 +lat_2=42.5 +lon_0=-95"
+  #"+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+  ))
+plot(namap2)
+
+#making colors for map pretty colors
+prettypurple=carto.pal(pal1 = "purple.pal", n1=6)
+bluebaby =carto.pal(pal1 = "blue.pal", n1=6)
+greenbean =carto.pal(pal1 = "green.pal", n1=6)
 # Descriptive Stats ---------------------------------------------------------
 #Hair and Keratin Stats re-run, only USA, overall, known and assumed 
 #some stats now? Descriptive Stats Take 1 Keratin/Oxygen
@@ -122,16 +137,11 @@ range(HairUSASrA1)
 
 
 # Import shapefile & transform data ---------------------------------------
-
-# Changed readOGR file path to assume that wd is base folder not /data
-namap = readOGR("data/PoliticalBoundaries_Shapefiles/boundary_l_v2.shp")
-plot(namap)
 Fspdf = spTransform(Fspdf,crs("+proj=laea +lat_0=45 +lon_0=-100 +x_0=0 +y_0=0 +ellps=sphere +units=m +no_defs"))
 
 #subset map to get of weird lines, maybe, it worked but still a few weird lines
 namap=namap[namap$COUNTRY %in% c("USA", "CAN USA", "MEX USA", "MEX", "CAN"),]
 plot(namap)
-
 
 # Hair Values Maps --------------------------------------------------------
 #Test map- PEACH
@@ -146,10 +156,7 @@ plot(Fspdf[Fspdf$Isotope=="d18O" & Fspdf$Element=="hair",], pch=21, col="purple"
 plot(namap, add=TRUE)
 plot(Fspdf[Fspdf$Isotope=="d18O" & Fspdf$Element=="hair",], pch=21, col="purple",
      bg = colvals[colind], add = TRUE)
-#making colors for map pretty colors
-prettypurple=carto.pal(pal1 = "purple.pal", n1=6)
-bluebaby =carto.pal(pal1 = "blue.pal", n1=6)
-greenbean =carto.pal(pal1 = "green.pal", n1=6)
+
 
 #Map, distribution of known origin hairs 
 plot(Fspdf[Fspdf$Isotope=="d18O" & Fspdf$Element=="hair" & Fspdf$Data.Origin=="known",],pch=21, col="purple")
@@ -189,6 +196,7 @@ legendTypo(pos = "bottomleft", title.txt = "87Sr/86Sr Hair Values",
 #MAP Oxygen for hairs,  NEED CALCULATONS for legend 
 ##BANANA!!  Something weird is going on and there are two spots showing no data
 ##but there is data for everything?
+## Chris: I truly have no idea why this plot is being weird. I redid it in ggplot below though. 
 colind = Fspdf$Iso.Value[Fspdf$Isotope == "d18O" & Fspdf$Element == "hair"]
 colind = ceiling((colind - min(colind)) / diff(range(colind)) * 6) + 1
 plot(Fspdf[Fspdf$Isotope=="d18O" & Fspdf$Element=="hair",], pch=21, col="purple",
@@ -231,6 +239,7 @@ legendTypo(pos = "bottomleft", title.txt = "87Sr/86Sr Teeth Values",
 
 #Teeth, Oxygen, range of values, Legend need calculations 
 ##BANANA! missing data for some points...
+# Chris: I continue to be befuddled by this code. Works in ggplot though, below
 colind = Fspdf$Iso.Value[Fspdf$Isotope == "d18O" & Fspdf$Element == "teeth"]
 colind = ceiling((colind - min(colind)) / diff(range(colind)) * 6) + 1
 plot(Fspdf[Fspdf$Isotope=="d18O" & Fspdf$Element=="teeth",], pch=21, col="purple",
@@ -262,8 +271,8 @@ legendTypo(pos = "bottomleft", title.txt = "d18O Bone Values",
 
 # Data Batches ------------------------------------------------------------
 #Organizing data into batches by Isotope, Country, Element etc.
-Oxygen=ForensicTIsoData[ForensicTIsoData$Isotope=="d18O",]
-Stront=ForensicTIsoData[ForensicTIsoData$Isotope=="87Sr/86Sr",]
+Oxygen=Fspdf[Fspdf$Isotope=="d18O",]
+Stront=Fspdf[Fspdf$Isotope=="87Sr/86Sr",]
 USAO=Oxygen[Oxygen$Country=="USA",]
 USASr=Stront[Stront$Country=="USA",]
 MexO=Oxygen[Oxygen$Country=="Mexico",]
@@ -282,7 +291,6 @@ USAOHair=USAO[USAO$Element=="hair",]
 USASrHair=USASr[USASr$Element=="hair",]
 MexOHair=MexO[MexO$Element=="hair",]
 MexSrHair=MexSr[MexSr$Element=="hair",]
-
 
 # Boxplots and Scatterplots -----------------------------------------------
 #New boxplots with Oxygen and Sr Hair data
@@ -367,7 +375,24 @@ boxplot(Iso.Value~Analyte, data = USASr, main= "USA Strontium Values by Analyte"
 ggplot(data = USAO, aes(x=Iso.Value, y=Lat, color=Element)) + 
   geom_point(size=2) + 
   scale_color_manual(values= c("#000080", "#800080", "#008000")) + 
-  labs(x = )
+  labs(x = expression(paste(delta^18, "O")), 
+       y = "Latitude") +
+  theme(legend.position = "top", 
+        legend.text.align = 0, 
+        legend.background = element_blank(), 
+        legend.key = element_blank(), 
+        legend.text = element_text(size = 18, color = "#222222"), 
+        axis.title = element_text(size = 22, color = "#222222"), 
+        axis.text = element_text(size = 18, color = "#222222"), 
+        axis.text.x = element_text(margin = margin(5, b = 10)), 
+        axis.ticks = element_blank(), 
+        axis.line = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_line(color = "#cbcbcb"), 
+        panel.grid.major.x = element_blank(), 
+        panel.background = element_blank(),
+        strip.background = element_rect(fill = "white"), 
+        strip.text = element_text(size = 22, hjust = 0))
 
 ggplot(data = USAO, aes(x=Iso.Value, y=Elev, color=Element)) + 
   geom_point(size=2) + 
@@ -422,10 +447,6 @@ ggplot(data = HairO, aes(x=Iso.Value, y=Lat, color=Location.Quality, shape=Count
 
 # Testing Scatterplot Colors ----------------------------------------------
 #Making biplots pretty
-#wesanderson color palette
-ggplot(data = USAO, aes(x=Iso.Value, y=Lat, color=Element))+geom_point(size=2)+scale_color_manual(values=wes_palette(n=3, name="Darjeeling1"))
-#RColorBrewer
-ggplot(data = USAO, aes(x=Iso.Value, y=Lat, color=Element))+geom_point(size=2)+scale_color_manual(values= brewer.pal(n=3, name="PRGn"))
 #Manually enter colors
 ggplot(data = USAO, aes(x=Iso.Value, y=Lat, color=Element))+geom_point(size=2)+scale_color_manual(values= c("#999999", "#E69F00", "#56B4E9"))
 ggplot(data = USAO, aes(x=Iso.Value, y=Lat, color=Element))+geom_point(size=2)+scale_color_manual(values= c("#000080", "#800080", "#008000"))
@@ -434,25 +455,28 @@ ggplot(data = USAO, aes(x=Iso.Value, y=Lat, color=Element))+geom_point(size=2)+s
 
 
 # ggplot Maps Setup -------------------------------------------------------
-chrismap = st_as_sf(namap)
-Fspdf2 = st_as_sf(Fspdf)
-
-Fspdf2 <- Fspdf2 %>% 
+chrismap = st_as_sf(namap2)
+df = st_as_sf(Fspdf)
+df <- st_transform(df, crs ="+proj=aea +lat_1=29.5 +lat_2=42.5 +lon_0=-95")
+df <- df %>% 
   dplyr::select(-c("Lat", "Lon")) %>% 
-  mutate(Lon = unlist(map(Fspdf2$geometry,1)),
-         Lat = unlist(map(Fspdf2$geometry,2)))
+  mutate(Lon = unlist(map(df$geometry,1)),
+         Lat = unlist(map(df$geometry,2)))
+
+rm(list=ls()[! ls() %in% c("df","chrismap")])
+
 # ggplot Maps Hair -------------------------------------------------------------
 # Map, all hair oxygen values
-breaks <- cut(subset(Fspdf2, Isotope=="d18O" & Element=="hair")$Iso.Value, 
+breaks <- cut(subset(df, Isotope=="d18O" & Element=="hair")$Iso.Value, 
               breaks = 6, 
               labels = c("-16.4 - -10.7", "10.7 - -5.2", "-5.2 - 0.5", 
                          "0.5 - 6.1", "6.1 - 11.7", "11.7 - 17.3"), 
               include.lowest = T)
 ggplot() + 
   geom_sf(data = chrismap) +
-  geom_point(data = subset(Fspdf2, Isotope=="d18O" & Element=="hair"), 
+  geom_point(data = subset(df, Isotope=="d18O" & Element=="hair"), 
              aes(x = Lon, y = Lat), color = "black", shape = 1, size = 2) +
-  geom_point(data = subset(Fspdf2, Isotope=="d18O" & Element=="hair"), 
+  geom_point(data = subset(df, Isotope=="d18O" & Element=="hair"), 
              aes(x = Lon, y = Lat, color = breaks)) +
   scale_color_manual(values = c(prettypurple)) +
   labs(color = expression(paste(delta^18, "O"))) +
@@ -461,16 +485,16 @@ ggplot() +
         legend.box.margin=margin(5,5,5,5))
 
 # Map, all hair strontium values
-breaks <- cut(subset(Fspdf2, Isotope=="87Sr/86Sr" & Element=="hair")$Iso.Value, 
+breaks <- cut(subset(df, Isotope=="87Sr/86Sr" & Element=="hair")$Iso.Value, 
               breaks = 6, 
               labels = c("0.704 - 0.707", "0.707 - 0.709", "0.709 - 0.712", 
                          "0.712 - 0.714", "0.714 - 0.717", "0.717 - 0.720"), 
               include.lowest = T)
 ggplot() + 
   geom_sf(data = chrismap) +
-    geom_point(data = subset(Fspdf2, Isotope=="87Sr/86Sr" & Element=="hair"), 
+    geom_point(data = subset(df, Isotope=="87Sr/86Sr" & Element=="hair"), 
              aes(x = Lon, y = Lat), color = "black", shape = 1, size = 2) +
-  geom_point(data = subset(Fspdf2, Isotope=="87Sr/86Sr" & Element=="hair"), 
+  geom_point(data = subset(df, Isotope=="87Sr/86Sr" & Element=="hair"), 
              aes(x = Lon, y = Lat, color = breaks)) +
   scale_color_manual(values = c(greenbean)) +
   labs(color = expression(paste(""^{87},"Sr/"^86,"Sr"))) +
@@ -478,17 +502,16 @@ ggplot() +
   theme(legend.box.background=element_rect(),
         legend.box.margin=margin(5,5,5,5))
  
- 
 #Map, distribution of known origin hairs 
 ggplot() + 
   geom_sf(data = chrismap) +
-  geom_point(data = subset(Fspdf2, Isotope=="d18O" & Element=="hair" & Data.Origin == "known"), 
+  geom_point(data = subset(df, Isotope=="d18O" & Element=="hair" & Data.Origin == "known"), 
              aes(x = Lon, y = Lat, color = "Oxygen")) +
-  geom_point(data = subset(Fspdf2, Isotope=="d18O" & Element=="hair" & Data.Origin == "known"), 
+  geom_point(data = subset(df, Isotope=="d18O" & Element=="hair" & Data.Origin == "known"), 
              aes(x = Lon, y = Lat), color = "black", shape = 1, size = 2) +
-  geom_point(data = subset(Fspdf2, Isotope=="87Sr/86Sr" & Element=="hair" & Data.Origin == "known"), 
+  geom_point(data = subset(df, Isotope=="87Sr/86Sr" & Element=="hair" & Data.Origin == "known"), 
              aes(x = Lon, y = Lat, color = "Strontium")) +
-  geom_point(data = subset(Fspdf2, Isotope=="87Sr/86Sr" & Element=="hair" & Data.Origin == "known"), 
+  geom_point(data = subset(df, Isotope=="87Sr/86Sr" & Element=="hair" & Data.Origin == "known"), 
              aes(x = Lon, y = Lat), color = "black", shape = 1, size = 2) +
   scale_color_manual(name = "Isotopes Type", 
                      values = c(Oxygen = "purple", Strontium = "#16642A")) +
@@ -499,12 +522,12 @@ ggplot() +
 
 #Map, distribution of oxygen hairs (known and assumed)
 ggplot() + 
-  geom_sf(data = chrismap) +
-  geom_point(data = subset(Fspdf2, Isotope=="d18O" & Element=="hair" & Data.Origin == "known"), 
+  geom_sf(data = chrismap, alpha = 0) +
+  geom_point(data = subset(df, Isotope=="d18O" & Element=="hair" & Data.Origin == "known"), 
              aes(x = Lon, y = Lat, color = "Known")) +
-  geom_point(data = subset(Fspdf2, Isotope=="d18O" & Element=="hair" & Data.Origin == "known"), 
+  geom_point(data = subset(df, Isotope=="d18O" & Element=="hair" & Data.Origin == "known"), 
              aes(x = Lon, y = Lat), color = "black", shape = 1, size = 2) +
-  geom_point(data = subset(Fspdf2, Isotope=="d18O" & Element=="hair" & Data.Origin == "assumed"), 
+  geom_point(data = subset(df, Isotope=="d18O" & Element=="hair" & Data.Origin == "assumed"), 
              aes(x = Lon, y = Lat, color = "Assumed"), shape = 15) +
   scale_color_manual(name = "Isotopes Type", 
                      values = c(Known = "#DED5E7", Assumed = "#3C1D62")) +
@@ -515,16 +538,16 @@ ggplot() +
 
 #Map, distribution of strontium hairs (known and assumed)
 ggplot() + 
-  geom_sf(data = chrismap) +
-  geom_point(data = subset(Fspdf2, Isotope=="87Sr/86Sr" & Element=="hair" & Data.Origin == "known"), 
+  geom_sf(data = chrismap, alpha = 0) +
+  geom_point(data = subset(df, Isotope=="87Sr/86Sr" & Element=="hair" & Data.Origin == "known"), 
              aes(x = Lon, y = Lat, color = "Known")) +
-  geom_point(data = subset(Fspdf2, Isotope=="87Sr/86Sr" & Element=="hair" & Data.Origin == "known"), 
+  geom_point(data = subset(df, Isotope=="87Sr/86Sr" & Element=="hair" & Data.Origin == "known"), 
              aes(x = Lon, y = Lat), color = "black", shape = 1, size = 2) +
-  geom_point(data = subset(Fspdf2, Isotope=="87Sr/86Sr" & Element=="hair" & Data.Origin == "assumed"), 
+  geom_point(data = subset(df, Isotope=="87Sr/86Sr" & Element=="hair" & Data.Origin == "assumed"), 
              aes(x = Lon, y = Lat, color = "Assumed"), shape = 15) +
   scale_color_manual(name = "Isotopes Type", 
                      values = c(Known = "#97C38B", Assumed = "#16642A")) +
-  labs(title = "Sample Distribution of Hair Strontium Samples, Known and Assumed") +
+  labs(title = "Sample Distribution of Strontium From Hair, Known and Assumed") +
   theme_void() + 
   theme(legend.box.background=element_rect(),
         legend.box.margin=margin(5,5,5,5))
@@ -532,32 +555,32 @@ ggplot() +
 #Map, distribution of assumed origin hairs
 ggplot() + 
   geom_sf(data = chrismap) +
-  geom_point(data = subset(Fspdf2, Isotope=="d18O" & Element=="hair" & Data.Origin == "assumed"), 
+  geom_point(data = subset(df, Isotope=="d18O" & Element=="hair" & Data.Origin == "assumed"), 
              aes(x = Lon, y = Lat, color = "Oxygen")) +
-  geom_point(data = subset(Fspdf2, Isotope=="d18O" & Element=="hair" & Data.Origin == "assumed"), 
+  geom_point(data = subset(df, Isotope=="d18O" & Element=="hair" & Data.Origin == "assumed"), 
              aes(x = Lon, y = Lat), color = "black", shape = 1, size = 2) +
-  geom_point(data = subset(Fspdf2, Isotope=="87Sr/86Sr" & Element=="hair" & Data.Origin == "assumed"), 
+  geom_point(data = subset(df, Isotope=="87Sr/86Sr" & Element=="hair" & Data.Origin == "assumed"), 
              aes(x = Lon, y = Lat, color = "Strontium")) +
-  geom_point(data = subset(Fspdf2, Isotope=="87Sr/86Sr" & Element=="hair" & Data.Origin == "assumed"), 
+  geom_point(data = subset(df, Isotope=="87Sr/86Sr" & Element=="hair" & Data.Origin == "assumed"), 
              aes(x = Lon, y = Lat), color = "black", shape = 1, size = 2) +
   scale_color_manual(name = "Isotopes Type", 
                      values = c(Oxygen = "purple", Strontium = "#16642A")) +
-  labs(title = "Sample Distribution of Hair  Samples of Assumed Origin") +
+  labs(title = "Sample Distribution of Hair, Assumed Origin") +
   theme_void() + 
   theme(legend.box.background=element_rect(),
         legend.box.margin=margin(5,5,5,5))
 
 # ggplot Maps Teeth -------------------------------------------------------
-breaks <- cut(subset(Fspdf2, Isotope=="d18O" & Element=="teeth")$Iso.Value, 
+breaks <- cut(subset(df, Isotope=="d18O" & Element=="teeth")$Iso.Value, 
               breaks = 6, 
               labels = c("10.9 - 14.2", "14.2 - 17.5", "17.5 - 20.8", 
                          "20.8 - 24.0", "24.0 - 27.3", "27.3 - 30.6"), 
               include.lowest = T)
 ggplot() + 
   geom_sf(data = chrismap) +
-  geom_point(data = subset(Fspdf2, Isotope=="d18O" & Element=="teeth"), 
+  geom_point(data = subset(df, Isotope=="d18O" & Element=="teeth"), 
              aes(x = Lon, y = Lat), color = "black", shape = 1, size = 2) +
-  geom_point(data = subset(Fspdf2, Isotope=="d18O" & Element=="teeth"), 
+  geom_point(data = subset(df, Isotope=="d18O" & Element=="teeth"), 
              aes(x = Lon, y = Lat, color = breaks)) +
   scale_color_manual(values = c(prettypurple)) +
   labs(color = expression(paste(delta^18, "O")), 
@@ -567,16 +590,16 @@ ggplot() +
         legend.box.margin=margin(5,5,5,5))
 
 # Map, all teeth strontium values
-breaks <- cut(subset(Fspdf2, Isotope=="87Sr/86Sr" & Element=="teeth")$Iso.Value, 
+breaks <- cut(subset(df, Isotope=="87Sr/86Sr" & Element=="teeth")$Iso.Value, 
               breaks = 6, 
               labels = c("0.704 - 0.707", "0.707 - 0.709", "0.709 - 0.712", 
                          "0.712 - 0.714", "0.714 - 0.717", "0.717 - 0.720"), 
               include.lowest = T)
 ggplot() + 
   geom_sf(data = chrismap) +
-  geom_point(data = subset(Fspdf2, Isotope=="87Sr/86Sr" & Element=="teeth"), 
+  geom_point(data = subset(df, Isotope=="87Sr/86Sr" & Element=="teeth"), 
              aes(x = Lon, y = Lat), color = "black", shape = 1, size = 2) +
-  geom_point(data = subset(Fspdf2, Isotope=="87Sr/86Sr" & Element=="teeth"), 
+  geom_point(data = subset(df, Isotope=="87Sr/86Sr" & Element=="teeth"), 
              aes(x = Lon, y = Lat, color = breaks)) +
   scale_color_manual(values = c(greenbean)) +
   labs(color = expression(paste(""^{87},"Sr/"^86,"Sr")), 
@@ -589,13 +612,13 @@ ggplot() +
 #Map, distribution of known origin teeths 
 ggplot() + 
   geom_sf(data = chrismap) +
-  geom_point(data = subset(Fspdf2, Isotope=="d18O" & Element=="teeth" & Data.Origin == "known"), 
+  geom_point(data = subset(df, Isotope=="d18O" & Element=="teeth" & Data.Origin == "known"), 
              aes(x = Lon, y = Lat, color = "Oxygen")) +
-  geom_point(data = subset(Fspdf2, Isotope=="d18O" & Element=="teeth" & Data.Origin == "known"), 
+  geom_point(data = subset(df, Isotope=="d18O" & Element=="teeth" & Data.Origin == "known"), 
              aes(x = Lon, y = Lat), color = "black", shape = 1, size = 2) +
-  geom_point(data = subset(Fspdf2, Isotope=="87Sr/86Sr" & Element=="teeth" & Data.Origin == "known"), 
+  geom_point(data = subset(df, Isotope=="87Sr/86Sr" & Element=="teeth" & Data.Origin == "known"), 
              aes(x = Lon, y = Lat, color = "Strontium")) +
-  geom_point(data = subset(Fspdf2, Isotope=="87Sr/86Sr" & Element=="teeth" & Data.Origin == "known"), 
+  geom_point(data = subset(df, Isotope=="87Sr/86Sr" & Element=="teeth" & Data.Origin == "known"), 
              aes(x = Lon, y = Lat), color = "black", shape = 1, size = 2) +
   scale_color_manual(name = "Isotopes Type", 
                      values = c(Oxygen = "purple", Strontium = "#16642A")) +
@@ -609,11 +632,11 @@ ggplot() +
 
 ggplot() + 
   geom_sf(data = chrismap) +
-  geom_point(data = subset(Fspdf2, Isotope=="d18O" & Element=="teeth" & Data.Origin == "known"), 
+  geom_point(data = subset(df, Isotope=="d18O" & Element=="teeth" & Data.Origin == "known"), 
              aes(x = Lon, y = Lat, color = "Known")) +
-  geom_point(data = subset(Fspdf2, Isotope=="d18O" & Element=="teeth" & Data.Origin == "known"), 
+  geom_point(data = subset(df, Isotope=="d18O" & Element=="teeth" & Data.Origin == "known"), 
              aes(x = Lon, y = Lat), color = "black", shape = 1, size = 2) +
-  geom_point(data = subset(Fspdf2, Isotope=="d18O" & Element=="teeth" & Data.Origin == "assumed"), 
+  geom_point(data = subset(df, Isotope=="d18O" & Element=="teeth" & Data.Origin == "assumed"), 
              aes(x = Lon, y = Lat, color = "Assumed"), shape = 15) +
   scale_color_manual(name = "Isotopes Type", 
                      values = c(Known = "#C4AED0", Assumed = "#3C1D62")) +
@@ -626,11 +649,11 @@ ggplot() +
 # GRAPE there's no assumed origin tooth samples
 ggplot() + 
   geom_sf(data = chrismap) +
-  geom_point(data = subset(Fspdf2, Isotope=="87Sr/86Sr" & Element=="teeth" & Data.Origin == "known"), 
+  geom_point(data = subset(df, Isotope=="87Sr/86Sr" & Element=="teeth" & Data.Origin == "known"), 
              aes(x = Lon, y = Lat, color = "Known")) +
-  geom_point(data = subset(Fspdf2, Isotope=="87Sr/86Sr" & Element=="teeth" & Data.Origin == "known"), 
+  geom_point(data = subset(df, Isotope=="87Sr/86Sr" & Element=="teeth" & Data.Origin == "known"), 
              aes(x = Lon, y = Lat), color = "black", shape = 1, size = 2) +
-  geom_point(data = subset(Fspdf2, Isotope=="87Sr/86Sr" & Element=="teeth" & Data.Origin == "assumed"), 
+  geom_point(data = subset(df, Isotope=="87Sr/86Sr" & Element=="teeth" & Data.Origin == "assumed"), 
              aes(x = Lon, y = Lat, color = "Assumed"), shape = 15) +
   scale_color_manual(name = "Isotopes Type", 
                      values = c(Known = "#97C38B", Assumed = "#16642A")) +
@@ -640,16 +663,16 @@ ggplot() +
         legend.box.margin=margin(5,5,5,5))
 
 #Map, distribution of assumed origin teeth
-# GRAPE this is a blank map because there's no tooh samples with assumed origin
+# GRAPE this is a blank map because there's no tooth samples with assumed origin
 ggplot() + 
   geom_sf(data = chrismap) +
-  geom_point(data = subset(Fspdf2, Isotope=="d18O" & Element=="teeth" & Data.Origin == "assumed"), 
+  geom_point(data = subset(df, Isotope=="d18O" & Element=="teeth" & Data.Origin == "assumed"), 
              aes(x = Lon, y = Lat, color = "Oxygen")) +
-  geom_point(data = subset(Fspdf2, Isotope=="d18O" & Element=="teeth" & Data.Origin == "assumed"), 
+  geom_point(data = subset(df, Isotope=="d18O" & Element=="teeth" & Data.Origin == "assumed"), 
              aes(x = Lon, y = Lat), color = "black", shape = 1, size = 2) +
-  geom_point(data = subset(Fspdf2, Isotope=="87Sr/86Sr" & Element=="teeth" & Data.Origin == "assumed"), 
+  geom_point(data = subset(df, Isotope=="87Sr/86Sr" & Element=="teeth" & Data.Origin == "assumed"), 
              aes(x = Lon, y = Lat, color = "Strontium")) +
-  geom_point(data = subset(Fspdf2, Isotope=="87Sr/86Sr" & Element=="teeth" & Data.Origin == "assumed"), 
+  geom_point(data = subset(df, Isotope=="87Sr/86Sr" & Element=="teeth" & Data.Origin == "assumed"), 
              aes(x = Lon, y = Lat), color = "black", shape = 1, size = 2) +
   scale_color_manual(name = "Isotopes Type", 
                      values = c(Oxygen = "purple", Strontium = "#16642A")) +
@@ -657,4 +680,6 @@ ggplot() +
   theme_void() + 
   theme(legend.box.background=element_rect(),
         legend.box.margin=margin(5,5,5,5))
+
+
 

@@ -1,0 +1,36 @@
+---
+title: "Stats"
+author: "Chris Stantis"
+date: '2022-12-19'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "~/GitHub/ForensicIsoTissues")
+```
+
+```{r import}
+df <- read_csv("data/ForensicIsoDataNew.csv", 
+                               col_types = cols(...1 = col_skip()))
+```
+# Intro
+Let's look at some stats for thinking about isotope systems, tissues, and known versus assumed data. 
+
+```{r firstLooks, echo = F, results = 'asis}
+table(df$Element)
+```
+
+# Known Versus Assumed
+
+There's no tooth samples of assumed origin, but we can compare hair. Admittedly, comparing might not mean much since we know that these were collected across different areas. 
+
+```{r tTestHairO}
+t.test(subset(df, Isotope == 'd18O' & Element == "hair")$Iso.Value ~
+      subset(df, Isotope == 'd18O' & Element == "hair")$Data.Origin)
+```
+```{r tTestHairSr}
+t.test(subset(df, Isotope == '87Sr/86Sr' & Element == "hair")$Iso.Value ~
+         subset(df, Isotope == '87Sr/86Sr' & Element == "hair")$Data.Origin)
+```
+
