@@ -11,12 +11,12 @@ plot(Fspdf)
 proj4string(Fspdf) <-CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 
 # Changed readOGR file path to assume that wd is base folder not /data
-namap = readOGR("data/PoliticalBoundaries_Shapefiles/boundary_l_v2.shp")
+namap = st_read("data/PoliticalBoundaries_Shapefiles/boundary_l_v2.shp")
 plot(namap)
 
-namap1 = readOGR("shapefiles/bound_p.shp")
+namap1 = st_read("shapefiles/bound_p.shp")
 namap1 = namap1[namap1$COUNTRY %in% c("CAN", "MEX", "USA"), ]
-namap2 <- spTransform(namap1, CRS(
+namap2 <- st_transform(namap1, CRS(
   "+proj=aea +lat_1=29.5 +lat_2=42.5 +lon_0=-95"
   #"+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
   ))
