@@ -1,16 +1,17 @@
-library(raster);library(sf)
+library(raster);library(sf); library(readr)
 
 strontium <- raster("shapefiles/rf_plantsoilmammal1.tif")
 plot(strontium)
 
 ForensicTIsoData <- read_csv("data/ForensicIsoDataNew.csv", 
                              col_types = cols(...1 = col_skip()))
-df =SpatialPointsDataFrame(data.frame(ForensicTIsoData$Lon, ForensicTIsoData$Lat), ForensicTIsoData)
-plot(df)
-proj4string(df) <-CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
-proj4string(strontium) <-CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+
+df <- SpatialPointsDataFrame(data.frame(ForensicTIsoData$Lon, ForensicTIsoData$Lat), 
+                           proj4string=strontium@crs, ForensicTIsoData)
 
 df$Sr <- raster::extract(strontium, df, 
-                          weights = F, fun = mean, 
-                          na.rm = T)
+                         buffer = 20000, 
+                         fun = mean,
+                         na.rm = T)
 #Why all the NAs???
+summary(strontium)
