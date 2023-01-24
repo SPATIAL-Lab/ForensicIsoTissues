@@ -26,6 +26,16 @@ plot(namap2)
 prettypurple=carto.pal(pal1 = "purple.pal", n1=6)
 bluebaby =carto.pal(pal1 = "blue.pal", n1=6)
 greenbean =carto.pal(pal1 = "green.pal", n1=6)
+
+# ggplot Setup
+chrismap = st_as_sf(namap2)
+df = st_as_sf(Fspdf)
+df <- st_transform(df, crs ="+proj=aea +lat_1=29.5 +lat_2=42.5 +lon_0=-95")
+df <- df %>% 
+  dplyr::select(-c("Lat", "Lon")) %>% 
+  mutate(Lon = unlist(map(df$geometry,1)),
+         Lat = unlist(map(df$geometry,2)))
+
 # Descriptive Stats ---------------------------------------------------------
 #Hair and Keratin Stats re-run, only USA, overall, known and assumed 
 #some stats now? Descriptive Stats Take 1 Keratin/Oxygen
@@ -452,19 +462,6 @@ ggplot(data = USAO, aes(x=Iso.Value, y=Lat, color=Element))+geom_point(size=2)+s
 ggplot(data = USAO, aes(x=Iso.Value, y=Lat, color=Element))+geom_point(size=2)+scale_color_manual(values= c("#000080", "#800080", "#008000"))
 
 
-
-
-# ggplot Maps Setup -------------------------------------------------------
-chrismap = st_as_sf(namap2)
-df = st_as_sf(Fspdf)
-df <- st_transform(df, crs ="+proj=aea +lat_1=29.5 +lat_2=42.5 +lon_0=-95")
-df <- df %>% 
-  dplyr::select(-c("Lat", "Lon")) %>% 
-  mutate(Lon = unlist(map(df$geometry,1)),
-         Lat = unlist(map(df$geometry,2)))
-
-rm(list=ls()[! ls() %in% c("df","chrismap")])
-
 # ggplot Maps Hair -------------------------------------------------------------
 # Map, all hair oxygen values
 breaks <- cut(subset(df, Isotope=="d18O" & Element=="hair")$Iso.Value, 
@@ -683,3 +680,29 @@ ggplot() +
 
 
 
+# Density Plots -----------------------------------------------------------
+
+#by tissue type
+ggplot() + 
+  geom_density(data = subset(df, Isotope=="87Sr/86Sr"), 
+               aes(x = Iso.Value, fill = Element, color = Element), alpha = 0.8
+               )+ 
+  scale_color_manual(values= c("#000080", "#800080", "#008000", "#727072")) +
+  scale_fill_manual(values= c("#000080", "#800080", "#008000", "#727072")) +
+  labs(
+    x = expression(paste(""^{87},"Sr/"^86,"Sr")), 
+    y = "Density", 
+    color = "Tissue", 
+    fill = "Tissue"
+  ) + 
+  theme_classic()
+
+#all together now
+ggplot() + 
+  geom_density(data = subset(df, Isotope=="87Sr/86Sr"), 
+               aes(x = Iso.Value), fill = "#BBDAAD", color = "#008000") + 
+  labs(
+    x = expression(paste(""^{87},"Sr/"^86,"Sr")), 
+    y = "Density"
+  ) + 
+  theme_classic()

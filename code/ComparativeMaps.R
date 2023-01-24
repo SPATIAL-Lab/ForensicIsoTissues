@@ -2,26 +2,32 @@ library(tidyverse);library(viridis);library(raster);library(sf)
 
 ForensicTIsoData <- read_csv("data/ForensicIsoDataNew.csv", 
                              col_types = cols(...1 = col_skip()))
-df <- st_as_sf(ForensicTIsoData, coords = c("Lon", "Lat"), crs = "+proj=longlat +ellps=WGS84 +no_defs")
+df <- st_as_sf(ForensicTIsoData, coords = c("Lon", "Lat"), crs = "+proj=longlat +datum=WGS84 +ellps=WGS84 +no_defs")
 
-
-namap1 = st_read("shapefiles/bound_p.shp")
-namap1 = namap1[namap1$COUNTRY %in% c("CAN", "MEX", "USA"), ]
-namap2 <- st_transform(namap1, CRS(
+#this map is here just in case I want it. 
+namap = st_read("shapefiles/bound_p.shp")
+namap = namap1[namap1$COUNTRY %in% c("CAN", "MEX", "USA"), ]
+namap <- st_transform(namap, CRS(
   #"+proj=aea +lat_1=29.5 +lat_2=42.5 +lon_0=-95"
-  "+proj=longlat +ellps=WGS84 +no_defs"
+  "+proj=longlat +datum=WGS84 +ellps=WGS84 +no_defs"
 ))
 
 oxygen <- raster("shapefiles/d18o_MA.tif")
+raster::crs(oxygen) <-"+proj=longlat +datum=WGS84 +ellps=WGS84 +no_defs"
 #df and oxygen raster have the same CRS already, so no need to transform anything
 strontium <- raster("shapefiles/rf_plantsoilmammal1.tif")
-raster::crs(strontium) <-"+proj=longlat +ellps=WGS84 +no_defs"
+raster::crs(strontium) <-"+proj=longlat +datum=WGS84 +ellps=WGS84 +no_defs"
+
 
 #na.rm = T just in case there's any empty data in the .tifs
 df$Precip <- raster::extract(oxygen, df, weights = F, fun = mean(), 
                               na.rm = T)
 df$Sr <- raster::extract(strontium, df, weights = F, fun = mean(), 
                          na.rm = T)
+
+#BANANA why can't I extract Sr data??
+sr <- as.data.frame(strontium)
+
 
 # Oxygen Comparison -------------------------------------------------------
 oxygenCompare <- subset(df, Isotope == 'd18O')
