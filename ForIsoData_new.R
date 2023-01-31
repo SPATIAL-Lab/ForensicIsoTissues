@@ -11,16 +11,17 @@ plot(Fspdf)
 proj4string(Fspdf) <-CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 
 # Changed readOGR file path to assume that wd is base folder not /data
-namap = st_read("data/PoliticalBoundaries_Shapefiles/boundary_l_v2.shp")
-plot(namap)
+# We don't like this map as much
+#namap = st_read("data/PoliticalBoundaries_Shapefiles/boundary_l_v2.shp")
+#plot(namap)
 
-namap1 = st_read("shapefiles/bound_p.shp")
-namap1 = namap1[namap1$COUNTRY %in% c("CAN", "MEX", "USA"), ]
-namap2 <- st_transform(namap1, CRS(
+namap = st_read("shapefiles/bound_p.shp")
+namap = namap[namap$COUNTRY %in% c("CAN", "MEX", "USA"), ]
+namap <- st_transform(namap, CRS(
   "+proj=aea +lat_1=29.5 +lat_2=42.5 +lon_0=-95"
   #"+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
   ))
-plot(namap2)
+plot(namap)
 
 #making colors for map pretty colors
 prettypurple=carto.pal(pal1 = "purple.pal", n1=6)
@@ -28,7 +29,7 @@ bluebaby =carto.pal(pal1 = "blue.pal", n1=6)
 greenbean =carto.pal(pal1 = "green.pal", n1=6)
 
 # ggplot Setup
-chrismap = st_as_sf(namap2)
+ggmap = st_as_sf(namap)
 df = st_as_sf(Fspdf)
 df <- st_transform(df, crs ="+proj=aea +lat_1=29.5 +lat_2=42.5 +lon_0=-95")
 df <- df %>% 
@@ -470,7 +471,7 @@ breaks <- cut(subset(df, Isotope=="d18O" & Element=="hair")$Iso.Value,
                          "0.5 - 6.1", "6.1 - 11.7", "11.7 - 17.3"), 
               include.lowest = T)
 ggplot() + 
-  geom_sf(data = chrismap) +
+  geom_sf(data = ggmap) +
   geom_point(data = subset(df, Isotope=="d18O" & Element=="hair"), 
              aes(x = Lon, y = Lat), color = "black", shape = 1, size = 2) +
   geom_point(data = subset(df, Isotope=="d18O" & Element=="hair"), 
@@ -488,7 +489,7 @@ breaks <- cut(subset(df, Isotope=="87Sr/86Sr" & Element=="hair")$Iso.Value,
                          "0.712 - 0.714", "0.714 - 0.717", "0.717 - 0.720"), 
               include.lowest = T)
 ggplot() + 
-  geom_sf(data = chrismap) +
+  geom_sf(data = ggmap) +
     geom_point(data = subset(df, Isotope=="87Sr/86Sr" & Element=="hair"), 
              aes(x = Lon, y = Lat), color = "black", shape = 1, size = 2) +
   geom_point(data = subset(df, Isotope=="87Sr/86Sr" & Element=="hair"), 
@@ -501,7 +502,7 @@ ggplot() +
  
 #Map, distribution of known origin hairs 
 ggplot() + 
-  geom_sf(data = chrismap) +
+  geom_sf(data = ggmap) +
   geom_point(data = subset(df, Isotope=="d18O" & Element=="hair" & Data.Origin == "known"), 
              aes(x = Lon, y = Lat, color = "Oxygen")) +
   geom_point(data = subset(df, Isotope=="d18O" & Element=="hair" & Data.Origin == "known"), 
@@ -519,7 +520,7 @@ ggplot() +
 
 #Map, distribution of oxygen hairs (known and assumed)
 ggplot() + 
-  geom_sf(data = chrismap, alpha = 0) +
+  geom_sf(data = ggmap, alpha = 0) +
   geom_point(data = subset(df, Isotope=="d18O" & Element=="hair" & Data.Origin == "known"), 
              aes(x = Lon, y = Lat, color = "Known")) +
   geom_point(data = subset(df, Isotope=="d18O" & Element=="hair" & Data.Origin == "known"), 
@@ -535,7 +536,7 @@ ggplot() +
 
 #Map, distribution of strontium hairs (known and assumed)
 ggplot() + 
-  geom_sf(data = chrismap, alpha = 0) +
+  geom_sf(data = ggmap, alpha = 0) +
   geom_point(data = subset(df, Isotope=="87Sr/86Sr" & Element=="hair" & Data.Origin == "known"), 
              aes(x = Lon, y = Lat, color = "Known")) +
   geom_point(data = subset(df, Isotope=="87Sr/86Sr" & Element=="hair" & Data.Origin == "known"), 
@@ -551,7 +552,7 @@ ggplot() +
 
 #Map, distribution of assumed origin hairs
 ggplot() + 
-  geom_sf(data = chrismap) +
+  geom_sf(data = ggmap) +
   geom_point(data = subset(df, Isotope=="d18O" & Element=="hair" & Data.Origin == "assumed"), 
              aes(x = Lon, y = Lat, color = "Oxygen")) +
   geom_point(data = subset(df, Isotope=="d18O" & Element=="hair" & Data.Origin == "assumed"), 
@@ -574,7 +575,7 @@ breaks <- cut(subset(df, Isotope=="d18O" & Element=="teeth")$Iso.Value,
                          "20.8 - 24.0", "24.0 - 27.3", "27.3 - 30.6"), 
               include.lowest = T)
 ggplot() + 
-  geom_sf(data = chrismap) +
+  geom_sf(data = ggmap) +
   geom_point(data = subset(df, Isotope=="d18O" & Element=="teeth"), 
              aes(x = Lon, y = Lat), color = "black", shape = 1, size = 2) +
   geom_point(data = subset(df, Isotope=="d18O" & Element=="teeth"), 
@@ -593,7 +594,7 @@ breaks <- cut(subset(df, Isotope=="87Sr/86Sr" & Element=="teeth")$Iso.Value,
                          "0.712 - 0.714", "0.714 - 0.717", "0.717 - 0.720"), 
               include.lowest = T)
 ggplot() + 
-  geom_sf(data = chrismap) +
+  geom_sf(data = ggmap) +
   geom_point(data = subset(df, Isotope=="87Sr/86Sr" & Element=="teeth"), 
              aes(x = Lon, y = Lat), color = "black", shape = 1, size = 2) +
   geom_point(data = subset(df, Isotope=="87Sr/86Sr" & Element=="teeth"), 
@@ -608,7 +609,7 @@ ggplot() +
 
 #Map, distribution of known origin teeths 
 ggplot() + 
-  geom_sf(data = chrismap) +
+  geom_sf(data = ggmap) +
   geom_point(data = subset(df, Isotope=="d18O" & Element=="teeth" & Data.Origin == "known"), 
              aes(x = Lon, y = Lat, color = "Oxygen")) +
   geom_point(data = subset(df, Isotope=="d18O" & Element=="teeth" & Data.Origin == "known"), 
@@ -628,7 +629,7 @@ ggplot() +
 # GRAPE there's no assumed origin tooth samples
 
 ggplot() + 
-  geom_sf(data = chrismap) +
+  geom_sf(data = ggmap) +
   geom_point(data = subset(df, Isotope=="d18O" & Element=="teeth" & Data.Origin == "known"), 
              aes(x = Lon, y = Lat, color = "Known")) +
   geom_point(data = subset(df, Isotope=="d18O" & Element=="teeth" & Data.Origin == "known"), 
@@ -645,7 +646,7 @@ ggplot() +
 #Map, distribution of strontium teeths (known and assumed)
 # GRAPE there's no assumed origin tooth samples
 ggplot() + 
-  geom_sf(data = chrismap) +
+  geom_sf(data = ggmap) +
   geom_point(data = subset(df, Isotope=="87Sr/86Sr" & Element=="teeth" & Data.Origin == "known"), 
              aes(x = Lon, y = Lat, color = "Known")) +
   geom_point(data = subset(df, Isotope=="87Sr/86Sr" & Element=="teeth" & Data.Origin == "known"), 
@@ -662,7 +663,7 @@ ggplot() +
 #Map, distribution of assumed origin teeth
 # GRAPE this is a blank map because there's no tooth samples with assumed origin
 ggplot() + 
-  geom_sf(data = chrismap) +
+  geom_sf(data = ggmap) +
   geom_point(data = subset(df, Isotope=="d18O" & Element=="teeth" & Data.Origin == "assumed"), 
              aes(x = Lon, y = Lat, color = "Oxygen")) +
   geom_point(data = subset(df, Isotope=="d18O" & Element=="teeth" & Data.Origin == "assumed"), 
