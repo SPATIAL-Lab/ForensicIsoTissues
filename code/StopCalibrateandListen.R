@@ -66,3 +66,30 @@ tspdf =SpatialPointsDataFrame(data.frame(teeth$Lon, teeth$Lat),
 proj4string(tspdf) <-CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 
 teethscape= calRaster(tspdf, prpiso, mask = naMap)
+
+#Uncalibrated hairs, known- is a NO-GO and assumed is also a NO-GO
+Kregularhair <- subset(ForensicTIsoData, Element == 'hair' & Isotope == 'd18O' & Data.Origin=='known') %>% 
+  rename(d18O  = Iso.Value,
+         d18O_cal = Calibrate)
+
+Kregularhair$d18O.sd <-0.3
+
+Krhspdf =SpatialPointsDataFrame(data.frame(Kregularhair$Lon, Kregularhair$Lat),
+                               data.frame(Kregularhair$d18O, Kregularhair$d18O.sd))
+
+proj4string(Krhspdf) <-CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+
+Kreghairscape= calRaster(Krhspdf, prpiso, mask = naMap)
+
+Aregularhair <- subset(ForensicTIsoData, Element == 'hair' & Isotope == 'd18O' & Data.Origin=='assumed') %>% 
+  rename(d18O  = Iso.Value,
+         d18O_cal = Calibrate)
+
+Aregularhair$d18O.sd <-0.3
+
+Arhspdf =SpatialPointsDataFrame(data.frame(Aregularhair$Lon, Aregularhair$Lat),
+                                data.frame(Aregularhair$d18O, Aregularhair$d18O.sd))
+
+proj4string(Arhspdf) <-CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+
+Areghairscape= calRaster(Arhspdf, prpiso, mask = naMap)
