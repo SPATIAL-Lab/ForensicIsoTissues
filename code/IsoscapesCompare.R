@@ -236,6 +236,27 @@ proj4string(tSrspdf) <-CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 
 teethSrscape= calRaster(tSrspdf, Sriso, mask = naMap)
 
+r = teethSrscape$lm.model$residuals
+teethres = cbind(teeth, r)
+
+#applying a naMAP mask to get rid of little weridos 
+teeth1 <- subset(ForensicTIsoData, Element == 'teeth' & Isotope == '87Sr/86Sr', mask = naMap) %>% 
+  rename(Sr  = Iso.Value)
+teeth1$Sr.sd <-0.0003
+
+
+tSrspdf1 =SpatialPointsDataFrame(data.frame(teeth1$Lon, teeth1$Lat),
+                                data.frame(teeth1$Sr, teeth1$Sr.sd))
+
+proj4string(tSrspdf1) <-CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+
+teethSrscape1= calRaster(tSrspdf1, Sriso, mask = naMap)
+
+#no dice
+r1 = teethSrscape1$lm.model$residuals
+teethres1 = cbind(teeth1, r1)
+
+
 #Hair stront
 Srhair <- subset(ForensicTIsoData, Element == 'hair' & Isotope == '87Sr/86Sr') %>% 
   rename(Sr  = Iso.Value)
@@ -248,6 +269,23 @@ hSrspdf =SpatialPointsDataFrame(data.frame(Srhair$Lon, Srhair$Lat),
 proj4string(hSrspdf) <-CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 
 hairSrscape= calRaster(hSrspdf, Sriso, mask = naMap)
+
+#okay, trying to get the residuals paired here...
+Srhair1 <- subset(ForensicTIsoData, Element == 'hair' & Isotope == '87Sr/86Sr', mask = naMap) %>% 
+  rename(Sr  = Iso.Value)
+Srhair1$Sr.sd <-0.0003
+
+
+hSrspdf1 =SpatialPointsDataFrame(data.frame(Srhair1$Lon, Srhair1$Lat),
+                                data.frame(Srhair1$Sr, Srhair1$Sr.sd))
+
+proj4string(hSrspdf1) <-CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+
+hairSrscape1= calRaster(hSrspdf1, Sriso, mask = naMap)
+
+#Again, no dice. Differing number of rows.
+r2 = hairSrscape1$lm.model$residuals
+hairres1 = cbind(Srhair1, r2)
 
 #Getting a bit hairy, known and assumed orig hair stront data
 KSrhair <- subset(ForensicTIsoData, Element == 'hair' & Isotope == '87Sr/86Sr' & Data.Origin =='known') %>% 
