@@ -54,10 +54,13 @@ hsp.cal = vect(data.frame("lon" = e$data$Lon, "lat" = e$data$Lat,
 hairscape.cal = calRaster(hsp.cal, prpiso, mask = naMap)
 
 plot(hairscape.cal$lm.data$isoscape.iso, hairscape.cal$lm.data$tissue.iso, 
-     col = match(toTrans$d18O_cal, unique(toTrans$d18O_cal)))
+     pch = 21, bg = match(toTrans$d18O_cal, unique(toTrans$d18O_cal)),
+     main = "Transformed",
+     xlab = expression("Precipitation "*delta^{18}*"O"),
+     ylab = expression("Hair "*delta^{18}*"O"))
 
-legend("topleft", col = seq_along(unique(toTrans$d18O_cal)), 
-       pch = 1, unique(toTrans$d18O_cal), cex = 0.75)
+legend("topleft", pt.bg = seq_along(unique(toTrans$d18O_cal)), 
+       pch = 21, unique(toTrans$d18O_cal), cex = 0.75)
 
 #now isoscape uncalibrated oxygen hairs
 hsp.orig = vect(data.frame("lon" = toTrans$Lon, "lat" = toTrans$Lat, 
@@ -67,10 +70,13 @@ hsp.orig = vect(data.frame("lon" = toTrans$Lon, "lat" = toTrans$Lat,
 hairscape.orig = calRaster(hsp.orig, prpiso, mask = naMap)
 
 plot(hairscape.orig$lm.data$isoscape.iso, hairscape.orig$lm.data$tissue.iso, 
-     col = match(toTrans$d18O_cal, unique(toTrans$d18O_cal)))
+     bg = match(toTrans$d18O_cal, unique(toTrans$d18O_cal)), pch = 21,
+     main = "Untransformed",
+     xlab = expression("Precipitation "*delta^{18}*"O"),
+     ylab = expression("Hair "*delta^{18}*"O"))
 
-legend("topleft", col = seq_along(unique(toTrans$d18O_cal)), 
-       pch = 1, unique(toTrans$d18O_cal))
+legend("topleft", pt.bg = seq_along(unique(toTrans$d18O_cal)), 
+       pch = 21, unique(toTrans$d18O_cal), cex = 0.75)
 
 #residuals for the two different approaches, classed by original calibration
 cals = unique(toTrans$d18O_cal)
