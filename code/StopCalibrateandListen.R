@@ -1,11 +1,12 @@
 library(terra);library(sf); library(readr); library(assignR); library(dplyr); library(assignR)
-library(raster)
-#not sure which packages are actually being used here...
 
+#Hair####
+
+#Read data
 ForensicTIsoData <- read_csv("data/ForensicIsoData.csv", 
                              col_types = cols(...1 = col_skip()))
-##Oye, not coperating on my computer
 
+#Only hair d18O
 testhair <- subset(ForensicTIsoData, Element == 'hair' & Isotope == 'd18O') %>% 
   rename(d18O  = Iso.Value,
         d18O_cal = Calibrate)
@@ -16,80 +17,112 @@ testhair$d18O.sd <-0.3
 #reftrans can't handle data with no calibration scale
 toTrans = data.frame(testhair[!is.na(testhair$d18O_cal),])
 
+#Also let's remove sites that don't fall on the isoscape
+#Oxygen isoscape
+prpiso = getIsoscapes("GlobalPrecipMA")
+prpiso = c(prpiso$d18o_MA, prpiso$d18o_se_MA)
+
+#First make a spatial version of the data
+ttsp = vect(toTrans, geom = c("Lon", "Lat"), crs = "WGS84", keepgeom = TRUE)
+
+#extract sites within mask
+ttsp = ttsp[naMap,]
+toTrans = as.data.frame(ttsp)
+
 #trying the refTrans, needs calibration scale field for the selected marker
 e = refTrans(toTrans, marker = "d18O", ref_scale = "VSMOW_O")
 
 #let's compare pre and post trans; sample order is different so we need
-#to match IDs to plot pre and post from the same samples
-ind = match(toTrans$Data.ID, e$data$Data.ID)
+#to resort them using a common field
+e$data = e$data[order(e$data$Sample.ID),]
+toTrans = toTrans[order(toTrans$Sample.ID),]
 
 #plot d18O
-plot(toTrans$d18O, e$data$d18O[ind])
+plot(toTrans$d18O, e$data$d18O, 
+     col = match(toTrans$d18O_cal, unique(toTrans$d18O_cal)))
 
-#Oxygen isoscape of calibrated data
-prpiso = getIsoscapes("GlobalPrecipMA")
-prpiso = stack(prpiso$d18o_MA, prpiso$d18o_se_MA)
+legend("topleft", col = seq_along(unique(toTrans$d18O_cal)), 
+       pch = 1, unique(toTrans$d18O_cal))
+abline(0, 1)
 
-hspdf =SpatialPointsDataFrame(data.frame(e$data$Lon, e$data$Lat),
-                              data.frame(e$data$d18O, e$data$d18O.sd))
+#Make a spatial version of the calibrated data
+hsp.cal = vect(data.frame("lon" = e$data$Lon, "lat" = e$data$Lat, 
+                        "d18O" = e$data$d18O, "d18O.sd" = e$data$d18O.sd), 
+             crs = "WGS84")
 
-proj4string(hspdf) <-CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+#Calibrate
+hairscape.cal = calRaster(hsp.cal, prpiso, mask = naMap)
 
-hairscape= calRaster(hspdf, prpiso, mask = naMap)
+plot(hairscape.cal$lm.data$isoscape.iso, hairscape.cal$lm.data$tissue.iso, 
+     col = match(toTrans$d18O_cal, unique(toTrans$d18O_cal)))
+
+legend("topleft", col = seq_along(unique(toTrans$d18O_cal)), 
+       pch = 1, unique(toTrans$d18O_cal), cex = 0.75)
 
 #now isoscape uncalibrated oxygen hairs
-regularhair <- subset(ForensicTIsoData, Element == 'hair' & Isotope == 'd18O') %>% 
-  rename(d18O  = Iso.Value,
-         d18O_cal = Calibrate)
+hsp.orig = vect(data.frame("lon" = toTrans$Lon, "lat" = toTrans$Lat, 
+                        "d18O" = toTrans$d18O, "d18O.sd" = toTrans$d18O.sd), 
+             crs = "WGS84")
 
-regularhair$d18O.sd <-0.3
+hairscape.orig = calRaster(hsp.orig, prpiso, mask = naMap)
 
-#rhspdf =SpatialPointsDataFrame(data.frame(regularhair$data$Lon, regularhair$data$Lat),
-#                              data.frame(regularhair$data$d18O, regularhair$data$d18O.sd))
+plot(hairscape.orig$lm.data$isoscape.iso, hairscape.orig$lm.data$tissue.iso, 
+     col = match(toTrans$d18O_cal, unique(toTrans$d18O_cal)))
 
-rhspdf =SpatialPointsDataFrame(data.frame(regularhair$Lon, regularhair$Lat),
-                               data.frame(regularhair$d18O, regularhair$d18O.sd))
+legend("topleft", col = seq_along(unique(toTrans$d18O_cal)), 
+       pch = 1, unique(toTrans$d18O_cal))
 
-proj4string(rhspdf) <-CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+#residuals for the two different approaches, classed by original calibration
+cals = unique(toTrans$d18O_cal)
+plot(density(hairscape.cal$lm.model$residuals[toTrans$d18O_cal == cals[1]]),
+     main = "Calibrated", ylim = c(0,0.5))
+for(i in 2:length(cals)){
+  lines(density(hairscape.cal$lm.model$residuals[toTrans$d18O_cal == cals[i]]),
+       col = i)
+}
+legend("topleft", col = seq_along(unique(toTrans$d18O_cal)), 
+       lty = 1, unique(toTrans$d18O_cal))
 
-reghairscape= calRaster(rhspdf, prpiso, mask = naMap)
+#residuals for the two different approaches, classed by original calibration
+plot(density(hairscape.orig$lm.model$residuals[toTrans$d18O_cal == cals[1]]),
+     main = "Uncalibrated", ylim = c(0,0.5))
+for(i in 2:length(cals)){
+  lines(density(hairscape.orig$lm.model$residuals[toTrans$d18O_cal == cals[i]]),
+        col = i)
+}
+legend("topleft", col = seq_along(unique(toTrans$d18O_cal)), 
+       lty = 1, unique(toTrans$d18O_cal))
+
+#test for equal means of residuals from different orig calibrations
+oneway.test(hairscape.cal$lm.model$residuals ~ toTrans$d18O_cal, var.equal = FALSE)
+oneway.test(hairscape.orig$lm.model$residuals ~ toTrans$d18O_cal, var.equal = FALSE)
+#slightly less sig. differnent for calibrated, but differences exist for both treatments 
+
+#Teeth####
 
 #teeth time, teeth oxygen isoscape
 teeth <- subset(ForensicTIsoData, Element == 'teeth' & Isotope == 'd18O') %>% 
   rename(d18O  = Iso.Value,
          d18O_cal = Calibrate)
-teeth$d18O.sd <-0.3
 
-tspdf =SpatialPointsDataFrame(data.frame(teeth$Lon, teeth$Lat),
-                              data.frame(teeth$d18O, teeth$d18O.sd))
+teeth$d18O.sd <- 0.3
 
-proj4string(tspdf) <-CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+#One outlier needs removing
+teeth = teeth[!(teeth$d18O == min(teeth$d18O)),]
 
-teethscape= calRaster(tspdf, prpiso, mask = naMap)
+#Make spatial
+teethsp = vect(data.frame("lon" = teeth$Lon, "lat" = teeth$Lat, 
+                      "d18O" = teeth$d18O, "d18O.sd" = teeth$d18O.sd),
+           crs = "WGS84")
 
-#Uncalibrated hairs, known- is a NO-GO and assumed is also a NO-GO
-Kregularhair <- subset(ForensicTIsoData, Element == 'hair' & Isotope == 'd18O' & Data.Origin=='known') %>% 
-  rename(d18O  = Iso.Value,
-         d18O_cal = Calibrate)
+#Model fit
+teethscape = calRaster(teethsp, prpiso, mask = naMap)
 
-Kregularhair$d18O.sd <-0.3
+#Get prefix that hopefully is unique per study
+stud = substr(teeth$Sample.ID, 1, 5)
 
-Krhspdf =SpatialPointsDataFrame(data.frame(Kregularhair$Lon, Kregularhair$Lat),
-                               data.frame(Kregularhair$d18O, Kregularhair$d18O.sd))
-
-proj4string(Krhspdf) <-CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
-
-Kreghairscape= calRaster(Krhspdf, prpiso, mask = naMap)
-
-Aregularhair <- subset(ForensicTIsoData, Element == 'hair' & Isotope == 'd18O' & Data.Origin=='assumed') %>% 
-  rename(d18O  = Iso.Value,
-         d18O_cal = Calibrate)
-
-Aregularhair$d18O.sd <-0.3
-
-Arhspdf =SpatialPointsDataFrame(data.frame(Aregularhair$Lon, Aregularhair$Lat),
-                                data.frame(Aregularhair$d18O, Aregularhair$d18O.sd))
-
-proj4string(Arhspdf) <-CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
-
-Areghairscape= calRaster(Arhspdf, prpiso, mask = naMap)
+par(mar = c(5,5,1,1))
+plot(teethscape$lm.data$isoscape.iso, teethscape$lm.data$tissue.iso,
+     bg = match(stud, unique(stud)), pch = 21, 
+     xlab = expression("Precipitation "*delta^{18}*"O"),
+     ylab = expression("Tooth "*delta^{18}*"O"))
