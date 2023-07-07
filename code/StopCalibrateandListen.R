@@ -1,9 +1,9 @@
 library(terra);library(sf); library(readr); library(assignR); library(dplyr); library(assignR)
-
+library(viridisLite)
 #Hair####
 
 #Read data
-ForensicTIsoData <- read_csv("data/ForensicIsoData.csv", 
+ForensicTIsoData <- read_csv("data/ForensicTissue4.csv", 
                              col_types = cols(...1 = col_skip()))
 
 #Only hair d18O
@@ -20,9 +20,6 @@ toTrans = data.frame(testhair[!is.na(testhair$d18O_cal),])
 #Also let's remove sites that don't fall on the isoscape
 #First make a spatial version of the data
 ttsp = vect(toTrans, geom = c("Lon", "Lat"), crs = "WGS84", keepgeom = TRUE)
-
-#extract sites within mask
-ttsp = ttsp[naMap,]
 
 #now convert back to aspatial version for the refTrans
 #this is where to remove values from tipple ds with TipFix.R
@@ -56,7 +53,7 @@ prpiso = getIsoscapes("GlobalPrecipMA")
 prpiso = c(prpiso$d18o_MA, prpiso$d18o_se_MA)
 
 #Calibrate
-hairscape.cal = calRaster(hsp.cal, prpiso, mask = naMap)
+hairscape.cal = calRaster(hsp.cal, prpiso)
 
 plot(hairscape.cal$lm.data$isoscape.iso, hairscape.cal$lm.data$tissue.iso, 
      pch = 21, bg = match(toTrans$d18O_cal, unique(toTrans$d18O_cal)),
@@ -72,7 +69,7 @@ hsp.orig = vect(data.frame("lon" = toTrans$Lon, "lat" = toTrans$Lat,
                         "d18O" = toTrans$d18O, "d18O.sd" = toTrans$d18O.sd), 
              crs = "WGS84")
 
-hairscape.orig = calRaster(hsp.orig, prpiso, mask = naMap)
+hairscape.orig = calRaster(hsp.orig, prpiso)
 
 plot(hairscape.orig$lm.data$isoscape.iso, hairscape.orig$lm.data$tissue.iso, 
      bg = match(toTrans$d18O_cal, unique(toTrans$d18O_cal)), pch = 21,
@@ -127,13 +124,71 @@ teethsp = vect(data.frame("lon" = teeth$Lon, "lat" = teeth$Lat,
            crs = "WGS84")
 
 #Model fit
-teethscape = calRaster(teethsp, prpiso, mask = naMap)
+teethscape = calRaster(teethsp, prpiso)
 
 #Get prefix that hopefully is unique per study
-stud = substr(teeth$Sample.ID, 1, 5)
+stud = substr(teeth$Sample.ID, 1, 4)
+studs = unique(stud)
 
 par(mar = c(5,5,1,1))
 plot(teethscape$lm.data$isoscape.iso, teethscape$lm.data$tissue.iso,
-     bg = match(stud, unique(stud)), pch = 21, 
+     bg = match(stud, studs), pch = 21, 
      xlab = expression("Precipitation "*delta^{18}*"O"),
      ylab = expression("Tooth "*delta^{18}*"O"))
+
+#for convenience
+residue = teethscape$lm.model$residuals
+
+#remove one study that's a singleton
+studs = studs[studs != "KRAM"]
+residue = residue[stud %in% studs]
+stud = stud[stud %in% studs]
+
+#colors
+pal = viridis(length(studs))
+
+#residuals for the two different approaches, classed by original calibration
+plot(density(residue[stud == studs[1]]),
+     main = "", ylim = c(0,0.8), col = pal[1], lwd = 3, 
+     xlab = expression(delta^{18}*"O residual"))
+for(i in 2:length(studs)){
+  lines(density(residue[stud == studs[i]]),
+        col = pal[i], lwd = 3)
+}
+legend("topleft", col = pal, lty = 1, lwd = 3, studs, cex = 0.95)
+box()
+
+#ANOVA, big effect
+oneway.test(residue ~ stud, var.equal = FALSE)
+
+#class by tooth mineralization age
+tg = teeth$Tooth.group
+
+#fix tooth group value for better sortability
+tg[tg == ".5-6yrs"] = "0.5-6yrs"
+
+#unique vals
+tgs = unique(tg)
+tgs = sort(tgs)
+
+#for convenience
+residue = teethscape$lm.model$residuals
+
+#remove NAs
+residue = residue[!is.na(tg)]
+tg = tg[!is.na(tg)]
+tgs = tgs[!is.na(tgs)]
+
+#colors
+pal = viridis(length(tgs))
+
+#residuals for the two different approaches, classed by original calibration
+plot(density(residue[tg == tgs[1]]),
+     main = "", ylim = c(0,0.4), col = pal[1], lwd = 3, 
+     xlab = expression(delta^{18}*"O residual"), xlim = c(-4.5, 5))
+for(i in 2:length(tgs)){
+  lines(density(residue[tg == tgs[i]]),
+        col = pal[i], lwd = 3)
+}
+legend("topleft", col = pal, lty = 1, lwd = 3, tgs, cex = 0.95)
+box()
