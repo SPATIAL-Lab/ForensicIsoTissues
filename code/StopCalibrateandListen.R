@@ -18,16 +18,17 @@ testhair$d18O.sd <-0.3
 toTrans = data.frame(testhair[!is.na(testhair$d18O_cal),])
 
 #Also let's remove sites that don't fall on the isoscape
-#Oxygen isoscape
-prpiso = getIsoscapes("GlobalPrecipMA")
-prpiso = c(prpiso$d18o_MA, prpiso$d18o_se_MA)
-
 #First make a spatial version of the data
 ttsp = vect(toTrans, geom = c("Lon", "Lat"), crs = "WGS84", keepgeom = TRUE)
 
 #extract sites within mask
 ttsp = ttsp[naMap,]
-toTrans = as.data.frame(ttsp)
+
+#now convert back to aspatial version for the refTrans
+#this is where to remove values from tipple ds with TipFix.R
+#I've kept that as a separate script for now because ultimately I think that
+#should be dealt with at the database level
+toTrans = values(ttsp, as.data.frame = TRUE)
 
 #trying the refTrans, needs calibration scale field for the selected marker
 e = refTrans(toTrans, marker = "d18O", ref_scale = "VSMOW_O")
@@ -49,6 +50,10 @@ abline(0, 1)
 hsp.cal = vect(data.frame("lon" = e$data$Lon, "lat" = e$data$Lat, 
                         "d18O" = e$data$d18O, "d18O.sd" = e$data$d18O.sd), 
              crs = "WGS84")
+
+#Oxygen isoscape
+prpiso = getIsoscapes("GlobalPrecipMA")
+prpiso = c(prpiso$d18o_MA, prpiso$d18o_se_MA)
 
 #Calibrate
 hairscape.cal = calRaster(hsp.cal, prpiso, mask = naMap)
