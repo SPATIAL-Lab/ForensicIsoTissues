@@ -19,7 +19,7 @@ vectqa1 <- vect(data.frame("lon" = regularhair$Lon, "lat" = regularhair$Lat,
 
 # QA1
 # This one might be quicker
-test = QA(vect, prpiso, bySite = FALSE, valiStation = 1, valiTime = 50, by = 2, mask = naMap, name = "test")
+#test = QA(vect, prpiso, bySite = FALSE, valiStation = 1, valiTime = 50, by = 2, mask = naMap, name = "test")
 # this is more like the original code from the vignette, for better or worse
 QA1 <- QA(vectqa1, prpiso, bySite = FALSE, valiStation = 1, valiTime = 50, 
             recal = TRUE, by = 2, prior = NULL, mask = naMap, setSeed = TRUE, 
