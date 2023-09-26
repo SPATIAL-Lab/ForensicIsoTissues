@@ -14,44 +14,45 @@ NAMAP = aggregate(NorAmericamap)
 BufNAMAP <- buffer(NAMAP, 5e4)
 plot(NorAmericamap)
 #Build base isoscapes
-prpiso = getIsoscapes("GlobalPrecipMA")
-prpiso <- c(prpiso$d18o_MA, prpiso$d18o_se_MA)
-plot(prpiso)
-
-
-prpiso3 = terra::project(prpiso2, crs(NAMAP))
-
 prpiso1 = getIsoscapes("GlobalPrecipMA")
 prpiso1 <- c(prpiso1$d18o_MA, prpiso1$d18o_se_MA)
 prpiso2= crop(prpiso, c( -180, -25, 0, 83.58326))
-plot(prpiso4)
-terra::writeRaster(prpiso3, "Testprpiso.tif", overwrite = TRUE)
+
+prpiso3 = terra::project(prpiso2, crs(NAMAP))
+plot(prpiso3)
+
 prpiso4 <-terra::mask (prpiso3, NAMAP)
+prpiso4 = crop(prpiso3, NAMAP)
 plot(prpiso4)
+
 #get assignR Sr shapefile codestuff
-Sr<- rast("shapefiles/GlobalSr/GlobalSr.tif")
-Sr.sd<- rast("shapefiles/GlobalSr/GlobalSr_se.tif")
-Sriso <- c(Sr, Sr.sd)
+Sriso = getIsoscapes("GlobalSr")
+
 #cropped
 Sriso= crop(Sriso, c(-16653815.4396, 0, 0, 8376837.3753))
 Sriso = terra::project(Sriso, crs(NAMAP))
 Sriso1 <-terra::mask (Sriso, NAMAP)
 plot(Sriso1)
-Sriso3 = crop(Sriso1, c(-7e+06, 5e+06, 0, 1e+07))
-terra::writeRaster(Sriso3, "TestSriso.tif", filetype = "GTiff", overwrite = TRUE)
-terra::writeRaster(Sriso3, "TestSriso1.tif", overwrite = TRUE)
+Sriso3 = crop(Sriso1, NAMAP)
+plot(Sriso3)
+
+#Get points into projection
+#Make data spatial
+FTID = vect(FTID, geom = c("Lon", "Lat"), crs = "WGS84")
+FTID = project(FTID, crs(NAMAP))
+
 #Hair Oxygen, map, isoscape, residuals K&A, 
 #Map, distribution of oxygen hairs (known and assumed)
 ggplot() + 
   geom_sf(data = NorAmericamap) +
-  geom_point(data = subset(FTID, Isotope=="d18O" & Element=="hair" & Data.Origin == "known"), 
-             aes(x = Lon, y = Lat, color = "Known")) +
-  geom_point(data = subset(FTID, Isotope=="d18O" & Element=="hair" & Data.Origin == "known"), 
-             aes(x = Lon, y = Lat), color = "black", shape = 1, size = 2) +
-  geom_point(data = subset(FTID, Isotope=="d18O" & Element=="hair" & Data.Origin == "assumed"), 
-             aes(x = Lon, y = Lat, color = "Assumed")) +
-  geom_point(data = subset(FTID, Isotope=="d18O" & Element=="hair" & Data.Origin == "assumed"), 
-             aes(x = Lon, y = Lat), color= "black", shape = 1, size = 2) +
+  geom_point(data = subset(FTID, "Isotope"=="d18O" & "Element"=="hair" & "Data.Origin" == "known"), 
+             aes(color = "Known")) +
+  geom_point(data = subset(FTID, "Isotope"=="d18O" & "Element"=="hair" & "Data.Origin" == "known"), 
+             color = "black", shape = 1, size = 2) +
+  geom_point(data = subset(FTID, "Isotope"=="d18O" & "Element"=="hair" & "Data.Origin" == "assumed"), 
+             aes(color = "Assumed")) +
+  geom_point(data = subset(FTID, "Isotope"=="d18O" & "Element"=="hair" & "Data.Origin" == "assumed"), 
+             color= "black", shape = 1, size = 2) +
   scale_color_manual(name = "Legend", 
                      values = c(Known = "#FDE725FF", Assumed = "#404788FF")) +
   labs(title = ("Oxygen Hair Samples"))+
@@ -63,17 +64,17 @@ ggplot() +
 ggsave("Map_hair_oxygen.tiff")
 
 #calibrated hairs, using RefTrans
-calhair <- subset(FTID, Element == 'hair' & Isotope == 'd18O') %>% 
-  rename(d18O  = Iso.Value,
-         d18O_cal = Calibrate)
+calhair <- subset(FTID, FTID$Element == 'hair' & FTID$Isotope == 'd18O')
+names(calhair)[names(calhair) == "Iso.Value"] = "d18O"
+names(calhair)[names(calhair) == "Calibrate"] = "d18O_cal"
+calhair = calhair[!is.na(calhair$d18O_cal)]
 calhair$d18O.sd <-0.3
-toTrans = data.frame(calhair[!is.na(calhair$d18O_cal),])
-calhairs = as.data.frame(toTrans)
+
 e = refTrans(toTrans, marker = "d18O", ref_scale = "VSMOW_O")
-hsp.cal = vect(data.frame("lon" = e$data$Lon, "lat" = e$data$Lat, 
-                          "d18O" = e$data$d18O, "d18O.sd" = e$data$d18O.sd), 
-               crs = "WGS84")
-hsp.cal = terra::project(hsp.cal, crs(NAMAP)) 
+e = data.frame(cbind(e$data, geom(calhair)[, 3:4]))
+
+hsp.cal = vect(e, geom = c("x", "y"), crs(NAMAP))
+hsp.cal = hsp.cal[!is.na(extract(prpiso4[[1]], hsp.cal, ID = FALSE, method = "bilinear"))]
 
 ggplot() + 
   geom_sf(data = ggmap) +
@@ -94,9 +95,13 @@ ggplot() +
         legend.box.margin=margin(5,5,5,5), 
         legend.position = c(0.15, 0), legend.justification = c(0, 0)) 
 
+#Version for calRaster
 
-hairscape.cal = calRaster(hsp.cal, prpiso1)
-hairscape.cal1 = calRaster(hsp.cal, prpiso, mask = NAMAP)
+hairscape.cal = calRaster(subset(hsp.cal, !is.na(hsp.cal$Sample.ID), c("d18O", "d18O.sd")), prpiso4)
+
+##add back residuals
+hsp.cal$residuals = hairscape.cal$lm.model$residuals
+
 ##BANANA. It's not catching everything
 calhair1 <- subset(FTID, Element == 'hair' & Isotope == 'd18O') %>% 
   rename(d18O  = Iso.Value,

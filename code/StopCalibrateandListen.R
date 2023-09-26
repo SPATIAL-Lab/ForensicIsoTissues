@@ -139,6 +139,37 @@ plot(teethscape$lm.data$isoscape.iso, teethscape$lm.data$tissue.iso,
 #for convenience
 residue = teethscape$lm.model$residuals
 
+#residual corrected dataset
+offs = numeric(length(studs))
+for(i in seq_along(studs)){
+  offs[i] = mean(residue[stud == studs[i]])
+}
+teethsp.stud = teethsp
+teethsp.stud$d18O = teethsp.stud$d18O - offs[match(stud, studs)]
+
+#Check new model fit
+teethscape2 = calRaster(teethsp.stud, prpiso)
+
+#Get site IDs
+teethsp.uni = subset(teethsp, !(duplicated(geom(teethsp)[,3:4])))
+
+si = match(geom(teethsp)[,3] * geom(teethsp)[,4], 
+           geom(teethsp.uni)[,3] * geom(teethsp.uni)[,4])
+
+teethsp$Site_ID = si
+teethsp.stud$Site_ID = si
+
+#Mask and QAs
+msk = vect(matrix(c(-50, -170, -170, -50, 12, 12, 72, 72), ncol = 2), type = "polygons", 
+           crs = "WGS84")
+
+qa1 = QA(teethsp, prpiso, mask = msk, valiStation = 30, by = 5)
+qa2 = QA(teethsp.stud, prpiso, mask = msk, valiStation = 35, by = 5)
+
+plot(qa1, qa2)
+
+
+
 #remove one study that's a singleton
 studs = studs[studs != "KRAM"]
 residue = residue[stud %in% studs]
