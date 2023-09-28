@@ -11,7 +11,7 @@ plot(ggmap)
 #shapefile for mask (Isoscapes, QA), shapefile in AEA, and buffered for QA and isoscapes
 NorAmericamap <-vect("shapefiles/Namap_aea.shp")
 NAMAP = aggregate(NorAmericamap)
-BufNAMAP <- buffer(NAMAP, 5e4)
+BufNAMAP <- buffer(NAMAP, 5e4) # might not need this anymore
 plot(NorAmericamap)
 #Build base isoscapes
 prpiso1 = getIsoscapes("GlobalPrecipMA")
@@ -19,12 +19,9 @@ prpiso1 <- c(prpiso1$d18o_MA, prpiso1$d18o_se_MA)
 prpiso2= crop(prpiso1, c( -180, -25, 0, 83.58326))
 
 prpiso3 = terra::project(prpiso2, crs(NAMAP))
-plot(prpiso3)
-
-prpiso4 <-terra::mask (prpiso3, NAMAP)
 prpiso4 = crop(prpiso3, NAMAP)
 plot(prpiso4)
-
+rm(prpiso1, prpiso2, prpiso3)
 #get assignR Sr shapefile codestuff
 Sriso = getIsoscapes("GlobalSr")
 
@@ -43,15 +40,16 @@ FTID = project(FTID, crs(NAMAP))
 
 #Hair Oxygen, map, isoscape, residuals K&A, 
 #Map, distribution of oxygen hairs (known and assumed)
+#PEACH: fix other ggplot maps to match this code
 ggplot() + 
   geom_sf(data = NorAmericamap) +
-  geom_point(data = subset(FTID, FTID$Isotope=="d18O" & FTID$Element=="hair" & FTID$Data.Origin == "known"), 
+  geom_spatvector(data = subset(FTID, FTID$Isotope=="d18O" & FTID$Element=="hair" & FTID$Data.Origin == "known"), 
              aes(color = "Known")) +
-  geom_point(data = subset(FTID, Isotope=="d18O" & Element=="hair" & Data.Origin == "known"), 
+  geom_spatvector(data = subset(FTID, FTID$Isotope=="d18O" & FTID$Element=="hair" & FTID$Data.Origin == "known"), 
              color = "black", shape = 1, size = 2) +
-  geom_point(data = subset(FTID, Isotope=="d18O" & Element=="hair" & Data.Origin == "assumed"), 
+  geom_spatvector(data = subset(FTID, FTID$Isotope=="d18O" & FTID$Element=="hair" & FTID$Data.Origin == "assumed"), 
              aes(color = "Assumed")) +
-  geom_point(data = subset(FTID, Isotope=="d18O" & Element=="hair" & Data.Origin == "assumed"), 
+  geom_spatvector(data = subset(FTID, FTID$Isotope=="d18O" & FTID$Element=="hair" & FTID$Data.Origin == "assumed"), 
              color= "black", shape = 1, size = 2) +
   scale_color_manual(name = "Legend", 
                      values = c(Known = "#FDE725FF", Assumed = "#404788FF")) +
@@ -96,8 +94,13 @@ ggplot() +
         legend.position = c(0.15, 0), legend.justification = c(0, 0)) 
 
 #Version for calRaster
-
-hairscape.cal = calRaster(subset(hsp.cal, !is.na(hsp.cal$Sample.ID), c("d18O", "d18O.sd")), prpiso4)
+#this isn't saving time but I tried it -Chris
+test <- terra::as.data.frame(hsp.cal, geom = 'XY') %>% 
+  select(x, y, d18O, d18O.sd)
+test <- vect(test, geom = c("x", "y"), crs(NAMAP))
+hairscape.cal = calRaster(test, prpiso4)
+#Gabe's is less lines, though befuddling
+hairscape.cal = calRaster(subset(hsp.cal, c("d18O", "d18O.sd")), prpiso4)
 
 ##add back residuals
 hsp.cal$residuals = hairscape.cal$lm.model$residuals
