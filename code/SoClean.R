@@ -16,7 +16,7 @@ plot(NorAmericamap)
 #Build base isoscapes
 prpiso1 = getIsoscapes("GlobalPrecipMA")
 prpiso1 <- c(prpiso1$d18o_MA, prpiso1$d18o_se_MA)
-prpiso2= crop(prpiso, c( -180, -25, 0, 83.58326))
+prpiso2= crop(prpiso1, c( -180, -25, 0, 83.58326))
 
 prpiso3 = terra::project(prpiso2, crs(NAMAP))
 plot(prpiso3)
@@ -45,13 +45,13 @@ FTID = project(FTID, crs(NAMAP))
 #Map, distribution of oxygen hairs (known and assumed)
 ggplot() + 
   geom_sf(data = NorAmericamap) +
-  geom_point(data = subset(FTID, "Isotope"=="d18O" & "Element"=="hair" & "Data.Origin" == "known"), 
+  geom_point(data = subset(FTID, FTID$Isotope=="d18O" & FTID$Element=="hair" & FTID$Data.Origin == "known"), 
              aes(color = "Known")) +
-  geom_point(data = subset(FTID, "Isotope"=="d18O" & "Element"=="hair" & "Data.Origin" == "known"), 
+  geom_point(data = subset(FTID, Isotope=="d18O" & Element=="hair" & Data.Origin == "known"), 
              color = "black", shape = 1, size = 2) +
-  geom_point(data = subset(FTID, "Isotope"=="d18O" & "Element"=="hair" & "Data.Origin" == "assumed"), 
+  geom_point(data = subset(FTID, Isotope=="d18O" & Element=="hair" & Data.Origin == "assumed"), 
              aes(color = "Assumed")) +
-  geom_point(data = subset(FTID, "Isotope"=="d18O" & "Element"=="hair" & "Data.Origin" == "assumed"), 
+  geom_point(data = subset(FTID, Isotope=="d18O" & Element=="hair" & Data.Origin == "assumed"), 
              color= "black", shape = 1, size = 2) +
   scale_color_manual(name = "Legend", 
                      values = c(Known = "#FDE725FF", Assumed = "#404788FF")) +
@@ -69,7 +69,7 @@ names(calhair)[names(calhair) == "Iso.Value"] = "d18O"
 names(calhair)[names(calhair) == "Calibrate"] = "d18O_cal"
 calhair = calhair[!is.na(calhair$d18O_cal)]
 calhair$d18O.sd <-0.3
-
+toTrans =data.frame(calhair)
 e = refTrans(toTrans, marker = "d18O", ref_scale = "VSMOW_O")
 e = data.frame(cbind(e$data, geom(calhair)[, 3:4]))
 
@@ -140,9 +140,17 @@ ggsave("densitycalibratehairresiduals.tiff")
 
 
 #isoscape uncalibrated/regular oxygen hairs
-regularhair <- subset(FTID, Element == 'hair' & Isotope == 'd18O')%>% 
-rename(d18O  = Iso.Value)
+##BANANANNANANANANANA not of this is working right
+regularhair <- subset(FTID, FTID$Element == 'hair' & FTID$Isotope == 'd18O') 
+names(regularhair)[names(regularhair) == "Iso.Value"] = "d18O"
 regularhair$d18O.sd <- 0.3
+hsp.org1 =data.frame(regularhair)
+hsp.org = data.frame(cbind(hsp.org1$data, geom(regularhair)[, 3:4]))
+hsp.orig = vect(hsp.org, geom = c("x", "y"), crs(NAMAP))
+hsp.orig = hsp.orig[!is.na(extract(prpiso4[[1]], hsp.orig, ID = FALSE, method = "bilinear"))]
+hairscape.orig = calRaster(subset(hsp.orig, c("d18O", "d18O.sd")), prpiso4)
+
+#old stuff
 hsp.orig = vect(data.frame("lon" = regularhair$Lon, "lat" = regularhair$Lat, 
                            "d18O" = regularhair$d18O, "d18O.sd" = regularhair$d18O.sd), 
                 crs = "WGS84")
