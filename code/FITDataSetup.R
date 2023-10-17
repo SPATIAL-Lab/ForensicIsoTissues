@@ -1,10 +1,10 @@
-library(tidyverse);library(readxl);library(dplyr); library(assignR)
+library(readxl);library(dplyr)
 
 #Read in data from data file from Github and merge sheets together
 FData1 <-read_excel("data/DataComp_23_10_3.xlsx", sheet = "Individual")
 FData2 <-read_excel("data/DataComp_23_10_3.xlsx", sheet = "Site")
 FData3 <-read_excel("data/DataComp_23_10_3.xlsx", sheet = "Sample")
-FData4 <-read_excel("data/DataComp_23_10_3.xlsx", sheet = "Data")
+FData4 <-read_excel("data/DataComp_23_10_3.xlsx", sheet = "Data", guess_max = 10000) # so Calibrate isn't assumed to be boolean
 Comp1 <-merge(FData2,FData3,by= "Site.ID")
 Comp2 <-merge(Comp1,FData1,by= "Ind.ID")
 Comp3 <-merge(Comp2,FData4,by= "Sample.ID")
@@ -12,11 +12,11 @@ Comp3 <-merge(Comp2,FData4,by= "Sample.ID")
 Comp3$Lat= as.numeric(Comp3$Lat)
 Comp3$Lon= as.numeric(Comp3$Lon)
 #Select needed data columns
-ForensicTisIsoData <-select(Comp3,1,2,3,5,6,7,8,9,10,11,12,13,14,15,16,18,19,20,,21,24,25,26, 27,28,32,33,35,36) 
+ForensicTisIsoData <-select(Comp3,1:3,5:16,18:21,24:28,32,33,35,36) 
 rm( FData1, FData2, FData3, FData4, Comp1, Comp2, Comp3)
 #Get rid of NA in Lat and Lon
 ForensicTisIsoData =ForensicTisIsoData[!is.na(ForensicTisIsoData$Lat),]
-ForensicTisIsoData =ForensicTisIsoData[!is.na(ForensicTisIsoData$Lon),]
+
 FTID <-ForensicTisIsoData
 
 #Summary statistics for entire dataset
@@ -44,7 +44,7 @@ summstats3 <- FTID %>%
             max = max(Iso.Value),
             n = n()) %>% mutate(Range =max-min)
 
-#Remove cities dropped from isoscapes
+#Remove cities routinely dropped from isoscapes
 FTID<- subset(FTID, City!="Tofino" & City!="Washington D.C." & City!="Mexico City")
 #subset and remove fingernail and bone data
 FTID2 <- subset(FTID, Element=="hair"|Element=="teeth")
