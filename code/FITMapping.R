@@ -1,15 +1,18 @@
-library(ggplot2); library(viridis)
-#Maps of data
+library(ggplot2); library(viridis);library(readr);library(terra); library(tidyterra)
+
+#Maps/Spatial distribution of data
 
 #This script can be used after running the FITDataSetup script, 
 #FTID can be run straight from the DataSetup as well without reading in the csv
 FTID <-read_csv("data/ForensicTissue.csv")
 
-FTID2 = vect(FTID, geom = c("Lon", "Lat"), crs = "WGS84")
-FTID2 = project(FTID2, crs(NAMAP))
-
 #Base shapefile in AEA, read in map of North America from shapefile
 NorAmericamap <-vect("shapefiles/Namap_aea.shp")
+
+#create spatvector to make maps from
+FTID2 = vect(FTID, geom = c("Lon", "Lat"), crs = "WGS84")
+FTID2 = terra::project(FTID2, crs(NorAmericamap))
+
 
 #Map, distribution of oxygen hairs (known and assumed)
 ggplot() + 
@@ -30,7 +33,7 @@ ggplot() +
         legend.title = element_text(color = 'black'),
         legend.box.margin=margin(5,5,5,5), 
         legend.position = c(0.15, 0), legend.justification = c(0, 0)) 
-ggsave("Map_hairoxygen.tiff")
+ggsave("figures/Map_hairoxygen.png")
 
 
 #Map, distribution of strontium hairs (known and assumed)
@@ -52,8 +55,7 @@ ggplot() +
         legend.title = element_text(color = 'black'),
         legend.box.margin=margin(5,5,5,5), 
         legend.position = c(0.15, 0),legend.justification = c(0, 0))
-ggsave("Map_KASrhair.tiff")
-
+ggsave("figures/Map_KASrhair.png")
 
 
 #Map, distribution of oxygen teeths (known and assumed)
@@ -74,7 +76,7 @@ ggplot() +
   theme(legend.box.background=element_rect(),
         legend.box.margin=margin(5,5,5,5),
         legend.position = c(0.15, 0),legend.justification = c(0, 0))
-ggsave("Map_KAoxygenteeth.tiff")
+ggsave("figures/Map_KAoxygenteeth.png")
 
 #Map, distribution of strontium teeths (known and assumed)
 ggplot() + 
@@ -94,7 +96,7 @@ ggplot() +
   theme(legend.box.background=element_rect(),
         legend.box.margin=margin(5,5,5,5),
         legend.position = c(0.15, 0),legend.justification = c(0, 0))
-ggsave("Map_KASrteeth.tiff")
+ggsave("figures/Map_KASrteeth.png")
 
 
 #Biplot of teeth and hairs Latitude and Oxygen Isotope values
@@ -103,3 +105,36 @@ ggplot(data = teethhair, aes(x=Iso.Value, y=Lat, color=Country, shape=Element))+
   scale_color_manual(values= c("#B8De29FF", "#2d708eff", "#481567ff"))+
   labs(y="Latitude", x="Isotopic Value")
 ggsave("Biplot_AllOxygen_Latitude.tiff")
+
+
+ggplot() + 
+  geom_density(data = teethO, aes(x = residuals, fill = Reference.ID, 
+                                  color = Reference.ID),
+               alpha = 0.7) +
+  scale_fill_viridis(discrete = T, option = 'D') + 
+  scale_color_viridis(discrete = T, option = 'D') + 
+  labs(
+    x = "Oxygen Teeth Isoscape Residuals", 
+    y = "Density", )
+ggsave("Density_refIDresiduals.png")
+
+ggplot() + 
+  geom_density(data = teethO, aes(x = residuals, 
+                                  fill = Tooth.group),
+               alpha = 0.7) +
+  scale_fill_viridis(discrete = T, option = 'D') + 
+  scale_color_viridis(discrete = T, option = 'D') + 
+  labs(
+    x = "Oxygen Teeth Isoscape Residuals", 
+    y = "Density", )
+ggsave("Density_toothgroupresiduals.png")
+ggplot() + 
+  geom_density(data = teethO, aes(x = residuals, fill = Tooth.group, 
+                                  color = Tooth.group),
+               alpha = 0.7) +
+  scale_fill_viridis(discrete = T, option = 'D') + 
+  scale_color_viridis(discrete = T, option = 'D') + 
+  labs(
+    x = "Oxygen Teeth Isoscape Residuals", 
+    y = "Density", )
+ggsave("Density_toothgroupresiduals2.png")

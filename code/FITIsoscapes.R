@@ -1,4 +1,5 @@
-library(assignR); library(terra); library(ggplot2); library(viridis)
+library (readr); library(assignR); library(terra); library(ggplot2); library(viridis);
+library(dplyr)
 
 #Isoscapes and QAs, includes Density plots of Know and Assumed origin residuals from isoscapes
 #This script can be used after running the FITDataSetup script, 
@@ -171,6 +172,7 @@ ggplot(data = teethO, aes(x=d18O, y=isoscape.iso, shape= Tooth.group, color=Coun
   scale_color_manual(values= c("#B8De29FF", "#2d708eff", "#481567ff"))+
   labs(y="Isoscape value", x="Oxygen Isotopic Value")
 ggsave("biplotisoscapevalueCountry.tiff")
+
 ggplot(data = teethO, aes(x=d18O, y=cr3$lm.data$isoscape.iso, shape= Tooth.group2, color=Reference.ID))+geom_point(size=2)+
   scale_color_viridis(discrete = TRUE, option = 'D')+
   labs(y="Isoscape Value", x="Oxygen Isotopic Value")
