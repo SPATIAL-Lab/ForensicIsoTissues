@@ -96,7 +96,8 @@ ggplot() +
 theme_dark()
 ggsave("figures/Density_Srhairresidual.tiff")
 
-#Teeth
+##Teeth
+#Oxygen Tooth
 teethO <- subset(FTID, Element == 'teeth' & Isotope == 'd18O') %>% 
   rename(d18O  = Iso.Value)
 teethO$d18O.sd <- 0.3
