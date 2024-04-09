@@ -126,11 +126,9 @@ teethoxy = vect(data.frame("lon" = teethO$Lon, "lat" = teethO$Lat,
                 crs = "WGS84")
 
 
-##Testing this out, I don't even know what I'm doing anymore. 
-teethoxyTest = project (teethoxy, "ESRI:102008")
-# need to find out what this -5935469.28582571, -147110.897737599 location is. 
-
-
+# Project and drop the site with geom -5935469.28582571, -147110.897737599 
+teethoxy = project (teethoxy, "ESRI:102008")
+teethoxy = teethoxy[geom(teethoxy)[,"x"] != -5935469.28582571]
 
 teethOscape = calRaster(teethoxy, NAtapiso)
 teethO$residuals = teethOscape$lm.model$residuals
