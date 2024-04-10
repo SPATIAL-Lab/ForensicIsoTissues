@@ -1,5 +1,5 @@
 library (readr); library(assignR); library(terra); library(ggplot2); library(viridis);
-library(dplyr)
+library(dplyr); library(tidyterra)
 
 #Isoscapes and QAs, includes Density plots of Know and Assumed origin residuals from isoscapes
 #This script can be used after running the FITDataSetup script, 
@@ -124,17 +124,18 @@ teethO$d18O.sd <- 0.3
 teethoxy = vect(data.frame("lon" = teethO$Lon, "lat" = teethO$Lat, 
                            "d18O" = teethO$d18O, "d18O.sd" = teethO$d18O.sd),
                 crs = "WGS84")
-
+teethoxy = vect(teethO,geom=c("Lon", "Lat"),
+                crs = "WGS84")
 
 # Project and drop the site with geom -5935469.28582571, -147110.897737599 
 teethoxy = project (teethoxy, "ESRI:102008")
 teethoxy = teethoxy[geom(teethoxy)[,"x"] != -5935469.28582571]
 
-teethOscape = calRaster(teethoxy, NAtapiso)
-teethO$residuals = teethOscape$lm.model$residuals
-teethO$isoscape.iso = teethOscape$lm.data$isoscape.iso
+teethOscape = calRaster(teethoxy[,c("d18O","d18O.sd") ], NAtapiso)
+teethoxy$residuals = teethOscape$lm.model$residuals
+teethoxy$isoscape.iso = teethOscape$lm.data$isoscape.iso
 #Calculate standard residual error for isoscape
-sd(teethO$residuals)
+sd(teethoxy$residuals)
 #Density plot of Known and Assumed origin residuals 
 ggplot() + 
   geom_density(data = teethO, aes(x = residuals, 
@@ -205,13 +206,17 @@ ggplot() +
     
     #Quality Analysis for Oxygen Teeth, by reference and tooth group/type
     #Adjusting isotopic values by reference residuals
-    teethO <- teethO %>% 
-      group_by(Reference.ID) %>% 
+    teethoxy <- teethoxy %>% 
+      tidyterra::group_by(Reference.ID) %>% 
       mutate(iso_By_Ref = d18O - mean(residuals))
     #Adjusting isotopic values by tooth group by residuals
-    teethO <- teethO %>% 
-      group_by(Tooth.group) %>% 
+    teethoxy <- teethoxy %>% 
+      tidyterra::group_by(Tooth.group) %>% 
       mutate(iso_Tooth_group = d18O - mean(residuals))
+    
+    #Need to subset teethoxy before QA?????
+    
+    
     #Assigning site ID
     #SiteIDs for QA, QA can be run without, but improves the QA with
     teethOxy.spuni = subset(teethoxy, !(duplicated(geom(teethoxy)[,3:4])))
