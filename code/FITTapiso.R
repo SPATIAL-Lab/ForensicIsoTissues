@@ -1,5 +1,5 @@
 library (readr); library(assignR); library(terra); library(ggplot2); library(viridis);
-library(dplyr); library(tidyterra)
+library(dplyr); library(tidyterra); library(geodata)
 
 #Isoscapes and QAs, includes Density plots of Know and Assumed origin residuals from isoscapes
 #This script can be used after running the FITDataSetup script, 
@@ -10,6 +10,17 @@ FTID <-read_csv("data/ForensicTissue.csv")
 NorAmericamap <-vect("shapefiles/Namap_aea.shp")
 NAMAP = aggregate(NorAmericamap)
 BufNAMAP <- buffer(NAMAP, 5e4) 
+#Need to use the new shapefile to match the isoscape
+worldvect <- world(path=tempdir())
+namap <- subset(worldvect, worldvect$NAME_0 == "United States" | worldvect$NAME_0 == "Canada" | worldvect$NAME_0 == "Mexico")
+namap1 = crop(namap, c(-180, -25, 0, 100))
+namap1 = project (namap1, "ESRI:102008")
+bb=ext(namap1)
+xmin(bb)=-5e6
+namap1=crop(namap1, bb)
+namap1=aggregate(namap1)
+Bufnamap1 <-buffer(namap1, 5e4)
+plot(Bufnamap1)
 
 #Create Base Oxygen and Strontium Isoscapes, pull global precipitation isoscapes from assignR
 NAtapiso <-rast("shapefiles/NAtap.tif")
@@ -121,9 +132,9 @@ hairSr$residuals = hairSrscape$lm.model$residuals
 teethO <- subset(FTID, Element == 'teeth' & Isotope == 'd18O') %>% 
   rename(d18O  = Iso.Value)
 teethO$d18O.sd <- 0.3
-teethoxy = vect(data.frame("lon" = teethO$Lon, "lat" = teethO$Lat, 
-                           "d18O" = teethO$d18O, "d18O.sd" = teethO$d18O.sd),
-                crs = "WGS84")
+#teethoxy = vect(data.frame("lon" = teethO$Lon, "lat" = teethO$Lat, 
+#                           "d18O" = teethO$d18O, "d18O.sd" = teethO$d18O.sd),
+#                crs = "WGS84")
 teethoxy = vect(teethO,geom=c("Lon", "Lat"),
                 crs = "WGS84")
 
@@ -214,8 +225,6 @@ ggplot() +
       tidyterra::group_by(Tooth.group) %>% 
       mutate(iso_Tooth_group = d18O - mean(residuals))
     
-    #Need to subset teethoxy before QA?????
-    
     
     #Assigning site ID
     #SiteIDs for QA, QA can be run without, but improves the QA with
@@ -224,32 +233,25 @@ ggplot() +
                geom(teethOxy.spuni)[,3] * geom(teethOxy.spuni)[,4])
     teethoxy$Site_ID=si
     #QA 1
-    tOQA1 = QA(teethoxy, NAtapiso, bySite = TRUE, valiStation = 1,
-               valiTime = 50, by = 2, mask = BufNAMAP, name = "Oxygen Teeth")
+    tOQA1 = QA(teethoxy[,c("d18O", "d18O.sd","Site_ID")], NAtapiso, bySite = TRUE, valiStation = 1,
+               valiTime = 50, by = 2, mask = Bufnamap1, name = "Oxygen Teeth")
     plot(tOQA1)
     
-    # QA 2, add Site IDS adn adjusting isotopic values by residuals based on reference
-    teethoxy2 <- vect(data.frame("lon" = teethO$Lon, "lat" = teethO$Lat, 
-                                 "d18O" = teethO$iso_By_Ref, "d18O.sd" = teethO$iso_By_Ref), 
-                      crs = "WGS84")
-    teethOxy.spuni1 = subset(teethoxy2, !(duplicated(geom(teethoxy2)[,3:4])))
-    si2 = match(geom(teethoxy2)[,3] * geom(teethoxy2)[,4],
-                geom(teethOxy.spuni1)[,3] * geom(teethOxy.spuni1)[,4])
-    teethoxy2$Site_ID=si2
+    # QA 2, 
+
+teethoxy2 <- terra::subset(teethoxy, !is.na(teethoxy$d18O.sd), c("d18O.sd","iso_By_Ref","Site_ID"))
+teethoxy2 %>% dplyr::rename(d18O = iso_By_Ref)
     
     tOQA2 <- QA(teethoxy2, NAtapiso, bySite = TRUE, valiStation = 1, valiTime = 50, 
-                recal = TRUE, by = 2, prior = NULL, mask = BufNAMAP, setSeed = TRUE, 
+                recal = TRUE, by = 2, prior = NULL, mask = Bufnamap1, setSeed = TRUE, 
                 name = "Oxygen Teeth Reference")
     # QA 3, add Site Ids, and adjusting isotopic values by residuals based on tooth group
-    teethoxy3 <- vect(data.frame("lon" = teethO$Lon, "lat" = teethO$Lat, 
-                                 "d18O" = teethO$iso_Tooth_group, "d18O.sd" = teethO$iso_Tooth_group), 
-                      crs = "WGS84")
-    teethOxy.spuni2 = subset(teethoxy3, !(duplicated(geom(teethoxy3)[,3:4])))
-    si3 = match(geom(teethoxy3)[,3] * geom(teethoxy3)[,4],
-                geom(teethOxy.spuni2)[,3] * geom(teethOxy.spuni2)[,4])
-    teethoxy3$Site_ID=si3
+teethoxy3 <- terra::subset(teethoxy, !is.na(teethoxy$d18O.sd), c("d18O.sd","iso_Tooth_group","Site_ID"))
+teethoxy3 %>% dplyr::rename(d18O = iso_Tooth_group)
+    
+  
     tOQA3 <- QA(teethoxy3, NAtapiso, bySite = TRUE, valiStation = 1, valiTime = 50, 
-                recal = TRUE, by = 2, prior = NULL, mask = BufNAMAP, setSeed = TRUE, 
+                recal = TRUE, by = 2, prior = NULL, mask = Bufnamap1, setSeed = TRUE, 
                 name = "Oxygen Teeth Tooth Group")
     #comparisons between QAs
     plot(tOQA1, tOQA2) 
