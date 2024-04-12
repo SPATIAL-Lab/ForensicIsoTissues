@@ -140,16 +140,16 @@ teethoxy = vect(teethO,geom=c("Lon", "Lat"),
 
 # Project and drop the site with geom -5935469.28582571, -147110.897737599 
 teethoxy = project (teethoxy, "ESRI:102008")
-teethoxy = teethoxy[geom(teethoxy)[,"x"] != -5935469.28582571]
+#teethoxy = teethoxy[geom(teethoxy)[,"x"] != -5935469.28582571]
 
 teethOscape = calRaster(teethoxy[,c("d18O","d18O.sd") ], NAtapiso)
-teethoxy$residuals = teethOscape$lm.model$residuals
-teethoxy$isoscape.iso = teethOscape$lm.data$isoscape.iso
+teethO$residuals = teethOscape$lm.model$residuals
+teethO$isoscape.iso = teethOscape$lm.data$isoscape.iso
 #Calculate standard residual error for isoscape
-sd(teethoxy$residuals)
+sd(teethO$residuals)
 #Density plot of Known and Assumed origin residuals 
 ggplot() + 
-  geom_density(data = teethO, aes(x = residuals, 
+  geom_density(data = teethoxy, aes(x = residuals, 
                                   color = Data.Origin),linewidth=1,
                alpha = 0.7) +
   scale_fill_manual(values=c("#404788FF","#7AD151FF")) + 
@@ -173,7 +173,7 @@ ggsave("figures/Density_Oteethresiduals1.png")
 
 #Density Plots- Reference ID and Tooth Group  
 ggplot() + 
-  geom_density(data = subset(teethO, !is.na(Tooth.group)), aes(x = residuals, 
+  geom_density(data = subset(teethoxy, !is.na(teethoxy$Tooth.group)), aes(x = residuals, 
                                                                color = Tooth.group), linewidth=1,
                alpha = 0.7) +
   scale_fill_viridis(discrete = T, option = 'D') + 
@@ -195,7 +195,7 @@ ggplot() +
 ggsave("figures/Density_toothgroup.png")
 
 ggplot() + 
-  geom_density(data = subset(teethO, !is.na(Reference.ID)), aes(x = residuals, 
+  geom_density(data = subset(teethoxy, !is.na(Reference.ID)), aes(x = residuals, 
                                                                 color = Reference.ID), linewidth=1,
                alpha = 0.7) +
   scale_fill_viridis(discrete = T, option = 'D') + 
@@ -217,14 +217,13 @@ ggplot() +
     
     #Quality Analysis for Oxygen Teeth, by reference and tooth group/type
     #Adjusting isotopic values by reference residuals
-    teethoxy <- teethoxy %>% 
+    teethO <- teethO %>% 
       tidyterra::group_by(Reference.ID) %>% 
       mutate(iso_By_Ref = d18O - mean(residuals))
     #Adjusting isotopic values by tooth group by residuals
-    teethoxy <- teethoxy %>% 
+    teethO <- teethO %>% 
       tidyterra::group_by(Tooth.group) %>% 
       mutate(iso_Tooth_group = d18O - mean(residuals))
-    
     
     #Assigning site ID
     #SiteIDs for QA, QA can be run without, but improves the QA with
@@ -233,29 +232,40 @@ ggplot() +
                geom(teethOxy.spuni)[,3] * geom(teethOxy.spuni)[,4])
     teethoxy$Site_ID=si
     #QA 1
-    tOQA1 = QA(teethoxy[,c("d18O", "d18O.sd","Site_ID")], NAtapiso, bySite = TRUE, valiStation = 1,
+tOQA1 = QA(teethoxy[,c("d18O", "d18O.sd","Site_ID")], NAtapiso, bySite = TRUE, valiStation = 1,
                valiTime = 50, by = 2, mask = Bufnamap1, name = "Oxygen Teeth")
-    plot(tOQA1)
+plot(tOQA1)
     
-    # QA 2, 
+# QA 2, 
+# QA 2, add Site IDS adn adjusting isotopic values by residuals based on reference
+teethoxy2 <- vect(data.frame("lon" = teethO$Lon, "lat" = teethO$Lat, 
+                             "d18O" = teethO$iso_By_Ref, "d18O.sd" = teethO$d18O.sd), 
+                  crs = "WGS84")
 
-teethoxy2 <- terra::subset(teethoxy, !is.na(teethoxy$d18O.sd), c("d18O.sd","iso_By_Ref","Site_ID"))
-teethoxy2 %>% dplyr::rename(d18O = iso_By_Ref)
+teethOxy.spuni1 = subset(teethoxy2, !(duplicated(geom(teethoxy2)[,3:4])))
+si2 = match(geom(teethoxy2)[,3] * geom(teethoxy2)[,4],
+            geom(teethOxy.spuni1)[,3] * geom(teethOxy.spuni1)[,4])
+teethoxy2$Site_ID=si2
+
     
-    tOQA2 <- QA(teethoxy2, NAtapiso, bySite = TRUE, valiStation = 1, valiTime = 50, 
+tOQA2 <- QA(teethoxy2, NAtapiso, bySite = TRUE, valiStation = 1, valiTime = 50, 
                 recal = TRUE, by = 2, prior = NULL, mask = Bufnamap1, setSeed = TRUE, 
                 name = "Oxygen Teeth Reference")
-    # QA 3, add Site Ids, and adjusting isotopic values by residuals based on tooth group
-teethoxy3 <- terra::subset(teethoxy, !is.na(teethoxy$d18O.sd), c("d18O.sd","iso_Tooth_group","Site_ID"))
-teethoxy3 %>% dplyr::rename(d18O = iso_Tooth_group)
-    
-  
-    tOQA3 <- QA(teethoxy3, NAtapiso, bySite = TRUE, valiStation = 1, valiTime = 50, 
+# QA 3, add Site Ids, and adjusting isotopic values by residuals based on tooth group
+teethoxy3 <- vect(data.frame("lon" = teethO$Lon, "lat" = teethO$Lat, 
+                             "d18O" = teethO$iso_Tooth_group, "d18O.sd" = teethO$d18O.sd), 
+                  crs = "WGS84")
+teethOxy.spuni2 = subset(teethoxy3, !(duplicated(geom(teethoxy3)[,3:4])))
+si3 = match(geom(teethoxy3)[,3] * geom(teethoxy3)[,4],
+            geom(teethOxy.spuni2)[,3] * geom(teethOxy.spuni2)[,4])
+teethoxy3$Site_ID=si3
+
+tOQA3 <- QA(teethoxy3, NAtapiso, bySite = TRUE, valiStation = 1, valiTime = 50, 
                 recal = TRUE, by = 2, prior = NULL, mask = Bufnamap1, setSeed = TRUE, 
                 name = "Oxygen Teeth Tooth Group")
-    #comparisons between QAs
-    plot(tOQA1, tOQA2) 
-    plot(tOQA1, tOQA3)
+#comparisons between QAs
+plot(tOQA1, tOQA2) 
+plot(tOQA1, tOQA3)
     
     ###Just for now, but I don't know if we'll use#######
     ggplot(data = teethO, aes(x=d18O, y=isoscape.iso, shape= Tooth.group, color=Country))+
@@ -308,4 +318,42 @@ teethoxy3 %>% dplyr::rename(d18O = iso_Tooth_group)
         axis.text.x = element_text(size =12,),
         axis.text.y = element_text(size =12,))
     ggsave("figures/Density_Srteethresiduals1.png")
+    
+    
+library(terra)
+    
+# Assuming 'spatial_data' is your SpatVector object
+    
+# Extract attribute data
+attribute_data <- teethoxy@data
+    
+# Extract spatial coordinates
+coords <- coordinates(teethoxy)
+    
+# Combine attribute data and spatial coordinates into a dataframe
+teethOxydf <- cbind(attribute_data, coords)
+    
+#Now 'spatial_dataframe' contains all attribute data along with spatial coordinates
+
+library(sf)
+
+# Assuming 'spatial_data' is your SpatVector object
+
+# Convert SpatVector to sf object
+sf_data <- st_as_sf(teethoxy)
+
+# Extract attribute data
+attribute_data <- st_drop_geometry(sf_data)
+
+# Extract spatial coordinates
+coords <- st_coordinates(sf_data)
+
+# Convert coordinates to dataframe
+coordinates_df <- as.data.frame(coords)
+
+# Combine attribute data and spatial coordinates into a dataframe
+teethOxydf <- cbind(attribute_data, coordinates_df)
+
+# Now 'spatial_dataframe' contains all attribute data along with spatial coordinates
+
     

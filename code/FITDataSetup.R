@@ -46,10 +46,10 @@ summstats3 <- FTID %>%
             n = n()) %>% mutate(Range =max-min)
 
 #Remove cities routinely dropped from isoscapes
-FTID<- subset(FTID, City!="Tofino" & City!="Washington D.C." & City!="Mexico City")
+FTID<- subset(FTID, City!="Tofino" & City!="Washington D.C." & City!="Mexico City" & City!="Honolulu")
 #subset and remove fingernail and bone data
 FTID2 <- subset(FTID, Element=="hair"|Element=="teeth")
-#Make sure not duplicates have snuck in
+#Make sure not duplicates have snuck
 FTID3<- FTID2[!duplicated(FTID2$Data.ID), ]
 #Write data to csv to run FITMapping and FITIsoscape
 write.csv(FTID3, file="data/ForensicTissue.csv")
