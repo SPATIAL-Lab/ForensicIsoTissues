@@ -26,7 +26,7 @@ ggplot() +
   geom_spatvector(data = subset(FTID2, FTID2$Isotope=="d18O" & FTID2$Element=="hair" & FTID2$Data.Origin == "assumed"), 
                   color= "black", shape = 1, size = 2) +
   scale_color_manual(name = "Legend", 
-                     values = c(Known = "#FDE725FF", Assumed = "#404788FF")) +
+                     values = c(Known ="#7AD151FF", Assumed = "#414788FF")) +
   labs(title = ("Oxygen Hair Samples"))+
   theme_void() + 
   theme(legend.box.background = element_rect(),legend.text = element_text(color = 'black'),
@@ -48,7 +48,7 @@ ggplot() +
   geom_spatvector(data = subset(FTID2, FTID2$Isotope=="87Sr/86Sr" & FTID2$Element=="hair" & FTID2$Data.Origin == "assumed"), 
              color = "black", shape = 0, size = 2)+
   scale_color_manual(name = "Legend", 
-                     values = c(Known= "#FDE725FF", Assumed= "#404788FF")) +
+                     values = c(Known= "#7AD151FF", Assumed = "#414788FF")) +
   labs(title = "Strontium Hair Samples") +
   theme_void() + 
   theme(legend.box.background=element_rect(),legend.text = element_text(color = 'black'),
@@ -70,7 +70,7 @@ ggplot() +
   geom_spatvector(data = subset(FTID2, FTID2$Isotope=="d18O" & FTID2$Element=="teeth" & FTID2$Data.Origin == "assumed"), 
              color= "black", shape = 1, size = 2) +
   scale_color_manual(name = "Legend", 
-                     values = c(Known = "#FDE725FF", Assumed = "#404788FF")) +
+                     values = c(Known= "#7AD151FF", Assumed = "#414788FF")) +
   labs(title = "Oxygen Teeth Samples") +
   theme_void() + 
   theme(legend.box.background=element_rect(),
@@ -90,7 +90,7 @@ ggplot() +
   geom_spatvector(data = subset(FTID2, FTID2$Isotope=="87Sr/86Sr" & FTID2$Element=="teeth" & FTID2$Data.Origin == "assumed"), 
              color = "black", shape = 0, size = 2)+
   scale_color_manual(name = "Legend", 
-                     values = c(Known= "#FDE725FF", Assumed= "#404788FF")) +
+                     values = c(Known= "#7AD151FF", Assumed = "#414788FF")) +
   labs(title = "Strontium Teeth Samples") +
   theme_void() + 
   theme(legend.box.background=element_rect(),
@@ -107,34 +107,4 @@ ggplot(data = teethhair, aes(x=Iso.Value, y=Lat, color=Country, shape=Element))+
 ggsave("Biplot_AllOxygen_Latitude.tiff")
 
 
-ggplot() + 
-  geom_density(data = teethO, aes(x = residuals, fill = Reference.ID, 
-                                  color = Reference.ID),
-               alpha = 0.7) +
-  scale_fill_viridis(discrete = T, option = 'D') + 
-  scale_color_viridis(discrete = T, option = 'D') + 
-  labs(
-    x = "Oxygen Teeth Isoscape Residuals", 
-    y = "Density", )
-ggsave("Density_refIDresiduals.png")
 
-ggplot() + 
-  geom_density(data = teethO, aes(x = residuals, 
-                                  fill = Tooth.group),
-               alpha = 0.7) +
-  scale_fill_viridis(discrete = T, option = 'D') + 
-  scale_color_viridis(discrete = T, option = 'D') + 
-  labs(
-    x = "Oxygen Teeth Isoscape Residuals", 
-    y = "Density", )
-ggsave("Density_toothgroupresiduals.png")
-ggplot() + 
-  geom_density(data = teethO, aes(x = residuals, fill = Tooth.group, 
-                                  color = Tooth.group),
-               alpha = 0.7) +
-  scale_fill_viridis(discrete = T, option = 'D') + 
-  scale_color_viridis(discrete = T, option = 'D') + 
-  labs(
-    x = "Oxygen Teeth Isoscape Residuals", 
-    y = "Density", )
-ggsave("Density_toothgroupresiduals2.png")

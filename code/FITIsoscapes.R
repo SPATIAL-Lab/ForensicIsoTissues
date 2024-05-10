@@ -5,7 +5,7 @@ library(dplyr)
 #This script can be used after running the FITDataSetup script, 
 #FTID can be run straight from the DataSetup as well without reading in the csv
 FTID <-read_csv("data/ForensicTissue.csv")
-
+FTID <-FTID3
 #Base shapefile in AEA, read in map of North America from shapefile, this is done in previous Mapping script, but if not mapping, run for shapefile
 NorAmericamap <-vect("shapefiles/Namap_aea.shp")
 NAMAP = aggregate(NorAmericamap)
@@ -60,6 +60,16 @@ hsp.orig = vect(data.frame("lon" = regularhair$Lon, "lat" = regularhair$Lat,
                 crs = "WGS84")
 hairscape.orig = calRaster(hsp.orig, prpiso1)
 regularhair$residuals = hairscape.orig$lm.model$residuals
+
+knownhair <- subset(FTID, Element == 'hair' & Isotope == 'd18O' & Data.Origin =="known")%>% 
+  rename(d18O  = Iso.Value)
+knownhair$d18O.sd <- 0.3
+hsp.known = vect(data.frame("lon" = knownhair$Lon, "lat" = knownhair$Lat, 
+                           "d18O" = knownhair$d18O, "d18O.sd" = knownhair$d18O.sd), 
+                crs = "WGS84")
+hairscape.known = calRaster(hsp.known, prpiso1)
+knownhair$residuals = hairscape.known$lm.model$residuals
+
 #Density plot of Known and Assumed origin residuals
 ggplot() + 
   geom_density(data = regularhair, aes(x = residuals, fill = Data.Origin, 
