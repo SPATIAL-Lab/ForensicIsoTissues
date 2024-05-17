@@ -344,8 +344,32 @@ labs(
       axis.text.x = element_text(size =12,),
       axis.text.y = element_text(size =12,))
 ggsave("figures/Density_Srteethresiduals1.png")
-    
-    
+ 
+
+#Additional isoscapes, US Oxygen Teeth    
+tapIso <-  getIsoscapes("USTap")
+tapIso <- c(tapIso$d18o, tapIso$d18o_sd)
+tapIso <- aggregate(tapIso, 4)
+tapIso = project (tapIso, "ESRI:102008")
+
+USteethonly <-subset(FTID,Element=="teeth" & Country=="USA" )
+
+USteethOonly <- subset(USteethonly, Isotope == 'd18O') %>% 
+  rename(d18O  = Iso.Value)
+USteethOonly$d18O.sd <- 0.3
+USteethoxy = vect(data.frame("lon" = USteethOonly$Lon, "lat" = USteethOonly$Lat, 
+                             "d18O" = USteethOonly$d18O, "d18O.sd" = USteethOonly$d18O.sd),
+                  crs = "WGS84")
+USteethOscape = calRaster(USteethoxy, tapIso)
+
+
+USteethOK <- subset(USteethonly, Isotope == 'd18O'& Data.Origin=="known") %>% 
+  rename(d18O  = Iso.Value)
+USteethOK$d18O.sd <- 0.3
+USteethoxy = vect(data.frame("lon" = USteethOK$Lon, "lat" = USteethOK$Lat, 
+                             "d18O" = USteethOK$d18O, "d18O.sd" = USteethOK$d18O.sd),
+                  crs = "WGS84")
+USteethOscape = calRaster(USteethoxy, tapIso)
 
 
     
