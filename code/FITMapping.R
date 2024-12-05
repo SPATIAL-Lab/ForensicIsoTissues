@@ -2,19 +2,18 @@ library(ggplot2); library(viridis);library(readr);library(terra); library(tidyte
 
 #Maps/Spatial distribution of data
 
-#This script can be used after running the FITDataSetup script, 
+#This script is used after running the FITDataSetup script, 
 #FTID can be run straight from the DataSetup as well without reading in the csv
 FTID <-read_csv("data/ForensicTissue.csv")
 
 #Base shapefile in AEA, read in map of North America from shapefile
 NorAmericamap <-vect("shapefiles/Namap_aea.shp")
 
-#create spatvector to make maps from
+#Create spatvector to make maps from
 FTID2 = vect(FTID, geom = c("Lon", "Lat"), crs = "WGS84")
 FTID2 = terra::project(FTID2, crs(NorAmericamap))
 
-
-#Map, distribution of oxygen hairs (known and assumed)
+#Map, distribution of oxygen hair (known and assumed)
 ggplot() + 
   geom_sf(data = NorAmericamap) +
   geom_spatvector(data = subset(FTID2, FTID2$Isotope=="d18O" & FTID2$Element=="hair" & FTID2$Data.Origin == "known"), 
@@ -36,7 +35,7 @@ ggplot() +
 ggsave("figures/Map_hairoxygen.png")
 
 
-#Map, distribution of strontium hairs (known and assumed)
+#Map, distribution of strontium hair (known and assumed)
 ggplot() + 
   geom_sf(data = NorAmericamap) +
   geom_spatvector(data = subset(FTID2, FTID2$Isotope=="87Sr/86Sr" & FTID2$Element=="hair" & FTID2$Data.Origin == "known"), 
@@ -58,7 +57,7 @@ ggplot() +
 ggsave("figures/Map_KASrhair.png")
 
 
-#Map, distribution of oxygen teeths (known and assumed)
+#Map, distribution of oxygen tooth enamel (known and assumed)
 ggplot() + 
   geom_sf(data = NorAmericamap)+
   geom_spatvector(data = subset(FTID2, FTID2$Isotope=="d18O" & FTID2$Element=="teeth" & FTID2$Data.Origin == "known"), 
@@ -78,7 +77,7 @@ ggplot() +
         legend.position = c(0.15, 0),legend.justification = c(0, 0))
 ggsave("figures/Map_KAoxygenteeth.png")
 
-#Map, distribution of strontium teeths (known and assumed)
+#Map, distribution of strontium tooth enamel (known and assumed)
 ggplot() + 
   geom_sf(data = NorAmericamap)+
   geom_spatvector(data = subset(FTID2, FTID2$Isotope=="87Sr/86Sr" & FTID2$Element=="teeth" & FTID2$Data.Origin == "known"), 
@@ -99,12 +98,7 @@ ggplot() +
 ggsave("figures/Map_KASrteeth.png")
 
 
-#Biplot of teeth and hairs Latitude and Oxygen Isotope values
-teethhair <- subset(FTID, Isotope == 'd18O')
-ggplot(data = teethhair, aes(x=Iso.Value, y=Lat, color=Country, shape=Element))+geom_point(size=2)+
-  scale_color_manual(values= c("#B8De29FF", "#2d708eff", "#481567ff"))+
-  labs(y="Latitude", x="Isotopic Value")
-ggsave("Biplot_AllOxygen_Latitude.tiff")
+
 
 
 

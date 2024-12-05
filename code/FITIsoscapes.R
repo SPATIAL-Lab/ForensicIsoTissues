@@ -5,7 +5,7 @@ library(dplyr)
 #This script can be used after running the FITDataSetup script, 
 #FTID can be run straight from the DataSetup as well without reading in the csv
 FTID <-read_csv("data/ForensicTissue.csv")
-FTID <-FTID3
+
 #Base shapefile in AEA, read in map of North America from shapefile, this is done in previous Mapping script, but if not mapping, run for shapefile
 NorAmericamap <-vect("shapefiles/Namap_aea.shp")
 NAMAP = aggregate(NorAmericamap)
@@ -39,6 +39,39 @@ hairscape.cal = calRaster(hsp.cal, prpiso1)
 toTrans$residuals = hairscape.cal$lm.model$residuals
 
 #Density plot of Known and Assumed origin residuals
+# Calculate counts per Data.Origin group
+counts <- toTrans %>%
+  group_by(Data.Origin) %>%
+  summarise(n = n())
+# Create new labels with counts
+new_labels <- paste0(counts$Data.Origin, " (n=", counts$n, ")")
+names(new_labels) <- counts$Data.Origin
+# Plot with updated legend labels that include counts
+ggplot() + 
+  geom_density(data = toTrans, aes(x = residuals, fill = Data.Origin, color = Data.Origin), 
+               alpha = 0.7) +
+  scale_fill_viridis(discrete = TRUE, option = 'C', labels = new_labels) + 
+  scale_color_viridis(discrete = TRUE, option = 'C', labels = new_labels) + 
+  labs(
+    x = "Calibrated Oxygen Hair Isoscape Residuals", 
+    y = "Density", 
+    fill = "Data Origin",  # Legend title for the fill
+    color = "Data Origin"  # Legend title for the color
+  ) +
+  theme(
+    panel.background = element_rect(fill = 'white'),
+    plot.background = element_rect(fill = 'transparent', color = NA),
+    legend.background = element_rect(fill = 'transparent'),
+    legend.box.background = element_rect(fill = 'transparent'),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 16),
+    axis.title.x = element_text(size = 16),
+    axis.title.y = element_text(size = 16),
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12)
+  )
+
+
 ggplot() + 
   geom_density(data = toTrans, aes(x = residuals, fill = Data.Origin, 
                                     color = Data.Origin),
