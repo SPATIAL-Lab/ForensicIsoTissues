@@ -12,7 +12,7 @@ Comp3 <-merge(Comp2,FData4,by= "Sample.ID")
 Comp3$Lat= as.numeric(Comp3$Lat)
 Comp3$Lon= as.numeric(Comp3$Lon)
 #Select needed data columns
-ForensicTisIsoData <-select(Comp3,1:3,5:16,18:21,24:28,32,33,35,36) 
+ForensicTisIsoData <-select(Comp3,1:3,5:15,17:21,24:29,30,32:34) 
 rm( FData1, FData2, FData3, FData4, Comp1, Comp2, Comp3)
 #Get rid of NA in Lat and Lon
 ForensicTisIsoData =ForensicTisIsoData[!is.na(ForensicTisIsoData$Lat),]
