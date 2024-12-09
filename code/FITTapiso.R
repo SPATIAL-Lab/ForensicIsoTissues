@@ -176,6 +176,8 @@ teethO$tissue.iso = teethOscape$lm.data$tissue.iso
 #Calculate standard residual error for isoscape
 sd(teethO$residuals)
 
+sd(teethO$d18O)/sd(teethO$isoscape.iso)
+
 # Test for normality
 group1 <- teethO$residuals[teethO$Data.Origin == "known"]
 group2 <- teethO$residuals[teethO$Data.Origin == "assumed"]
