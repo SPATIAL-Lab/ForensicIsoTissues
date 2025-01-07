@@ -368,8 +368,8 @@ teethoxy3$Site_ID=si3
 tOQA3 <- QA(teethoxy3, NAtapiso, bySite = TRUE, valiStation = 1, valiTime = 500, 
                 recal = TRUE, by = 2, prior = NULL, mask = Bufnamap1, setSeed = TRUE, 
                 name = "Oxygen Teeth Tooth Group")
-#Plot the QAs  
-plot.QA(tOQA1, tOQA2, tOQA3)
+#Plot the QAs
+plot(tOQA1, tOQA2, tOQA3)
 
 #Strontium Teeth Isoscape
 teethSr <- subset(FTID, Element == 'teeth' & Isotope == '87Sr/86Sr') %>% 
