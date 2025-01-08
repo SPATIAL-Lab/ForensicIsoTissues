@@ -1,9 +1,9 @@
 library (readr); library(assignR); library(terra); library(ggplot2); library(viridis);
 library(dplyr); library(tidyterra); library(geodata); library(car): library(ggpubr)
 
-#Isoscapes, Statistical test and Quality Anaylsis
+#Isoscapes, Statistical test and Quality Analysis
 #This script is used after running the FITDataSetup script, 
-#FTID can be run straight from the DataSetup without reading in the csv
+#FTID can be run straight from the FITDataSetup without reading in the csv
 FTID <-read_csv("data/ForensicTissue.csv")
 
 #Shapefile for Isoscapes
@@ -19,8 +19,7 @@ Bufnamap1 <-buffer(namap1, 5e4)
 plot(Bufnamap1)
 
 #Create Base Oxygen and Strontium Isoscapes, 
-#Pull North American tap and Global strontium isoscapes from assignR
-###Ideally will re-write this to pull from assignR
+#Read in North American tap (NAtap.tif) and pull in Global strontium isoscapes from assignR
 NAtapiso <-rast("shapefiles/NAtap.tif")
 NAtapiso <-c(NAtapiso$d18o.m, NAtapiso$d18o.se)
 
@@ -30,7 +29,7 @@ Sriso = terra::project(Sriso, crs(namap1))
 Sriso <-terra::mask (Sriso, namap1)
 Sriso = crop(Sriso, namap1)
 
-#Hair
+##Hair (Building the Isoscapes, followed by statistical analysis and figures)
 #Oxygen Hair Isoscapes
 #Calibrated hair, using RefTrans
 calhair <- subset(FTID, Element == 'hair' & Isotope == 'd18O') %>% 
@@ -66,7 +65,7 @@ print(levene_test_result_h)
 # Calculate means for the center of the data
 mean_x <- mean(toTrans1$isoscape.iso)
 mean_y <- mean(toTrans1$tissue.iso)
-# Calculate the intercept for the line with slope 0.35, 
+# Calculate the intercept for the line with slope 0.35 
 intercept_0.35 <- mean_y - 0.35 * mean_x
 # Fit the regression model
 model3 <- lm(tissue.iso ~ isoscape.iso, data = toTrans1)
@@ -74,10 +73,9 @@ r_squared3 <- summary(model3)$r.squared
 reg_eq3 <- paste0("y = ", round(coef(model3)[1], 2), " + ", round(coef(model3)[2], 2), "x")
 # Create the plot
 ggplot(data = toTrans1, aes(x = isoscape.iso, y = tissue.iso)) +
-  geom_point(size = 3, shape = 21, color = "black", stroke = 0.5, fill = "#2A788EFF") +  # Plot points
-  geom_abline(slope = 1, intercept = 0, color = "black", linetype = "dashed", size = 1.5) +  # One-to-one line
-  geom_abline(slope = 0.35, intercept = intercept_0.35, color = "black", linetype = "dashed", size = 1) +  # Line with slope = 0.35
-  geom_smooth(method = "lm", se = FALSE, color = "black", size = 1) +  # Add regression line (no confidence interval)
+  geom_point(size = 4, shape = 21, color = "black", stroke = 0.5, fill = "#348FA6") +  # Plot points
+  geom_abline(slope = 0.35, intercept = intercept_0.35, color = "black", linetype = "dashed", size = 1.5) +  # Line with slope = 0.35
+  geom_smooth(method = "lm", se = FALSE, color = "black", size = 1.5) +  # Add regression line (no confidence interval)
   labs(
     y = expression(delta^{18} * O[italic(hair)]),  # Y-axis label with subscript
     x = expression(delta^{18} * O[italic(isoscape)])  # X-axis label with subscript
@@ -85,8 +83,8 @@ ggplot(data = toTrans1, aes(x = isoscape.iso, y = tissue.iso)) +
   theme(
     panel.background = element_rect(fill = 'white'),  # White panel background
     plot.background = element_rect(fill = 'transparent', color = NA),  # Transparent plot background
-    axis.title.x = element_text(size = 18),  # X-axis title size
-    axis.title.y = element_text(size = 18),  # Y-axis title size
+    axis.title.x = element_text(size = 18, margin = margin(t = 10)),  # X-axis title size
+    axis.title.y = element_text(size = 18,  margin = margin(r = 10)),  # Y-axis title size
     axis.text.x = element_text(size = 14),  # X-axis text size
     axis.text.y = element_text(size = 14),  # Y-axis text size
     legend.position = "none",
@@ -95,14 +93,14 @@ ggplot(data = toTrans1, aes(x = isoscape.iso, y = tissue.iso)) +
   annotate("text", x = Inf, y = -Inf, label = paste("R² =", round(r_squared3, 2)), 
            hjust = 1.1, vjust = -1.5, size = 5) +
   annotate("text", x = Inf, y = -Inf, label = reg_eq3,
-           hjust = 1.1, vjust = -3.5, size = 5) +
+           hjust = 1.05, vjust = -3.5, size = 5) +
   coord_cartesian(
     xlim = c(min(toTrans1$isoscape.iso), max(toTrans1$isoscape.iso)),  # Set x-axis limits
     ylim = c(min(toTrans1$tissue.iso), max(toTrans1$tissue.iso)),  # Set y-axis limits
     clip = "on"  
   ) +
   coord_equal()  
-ggsave("figures/RegressionmodelOhaircalibrated.png")
+ggsave("figures/Figure5A.png")
 
 #Oxygen Hair Isoscape (uncalibrated/regular/no refTrans)
 regularhair <- subset(FTID, Element == 'hair' & Isotope == 'd18O')%>% 
@@ -122,7 +120,7 @@ sd(regularhair$residuals)
 #Strontium Hair Isoscape
 hairSr <- subset(FTID, Element == 'hair' & Isotope == '87Sr/86Sr') %>% 
   rename(Sr  = Iso.Value)
-hairSr$Sr.sd <- 0.3
+hairSr$Sr.sd <- 0.0003
 Srhair <- vect(data.frame("lon" = hairSr$Lon, "lat" = hairSr$Lat, 
                           "Sr" = hairSr$Sr, "Sr.sd" = hairSr$Sr.sd), 
                crs = "WGS84")
@@ -140,9 +138,9 @@ r_squared2 <- summary(model_2)$r.squared
 reg_eq <- paste0("y = ", round(coef(model_2)[1], 2), " + ", round(coef(model_2)[2], 2), "x")
 # Create the plot
 ggplot(data = hairSr, aes(x = isoscape.iso, y = tissue.iso)) +
-  geom_point(size = 3, shape = 21, color = "black", stroke = 0.5, fill = "#AADC32FF") +  
+  geom_point(size = 4, shape = 21, color = "black", stroke = 0.5, fill = "#AADC32FF") +  
   geom_abline(slope = 1, intercept = 0, color = "black", linetype = "dashed", size = 1.5) +  # One-to-one line
-  geom_smooth(method = "lm", se = FALSE, color = "black", size = 1) +  # Add regression line
+  geom_smooth(method = "lm", se = FALSE, color = "black", size = 1.5) +  # Add regression line
   labs(
     y = expression({}^{87} * Sr / {}^{86} * Sr[italic(hair)]),  
     x = expression({}^{87} * Sr / {}^{86} * Sr[italic(isoscape)])  
@@ -150,8 +148,8 @@ ggplot(data = hairSr, aes(x = isoscape.iso, y = tissue.iso)) +
   theme(
     panel.background = element_rect(fill = 'white'),
     plot.background = element_rect(fill = 'transparent', color = NA),
-    axis.title.x = element_text(size = 18),
-    axis.title.y = element_text(size = 18),
+    axis.title.x = element_text(size = 18, margin = margin(t=10)),
+    axis.title.y = element_text(size = 18, margin = margin(r=10)),
     axis.text.x = element_text(size = 14),
     axis.text.y = element_text(size = 14),
     plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
@@ -161,11 +159,11 @@ ggplot(data = hairSr, aes(x = isoscape.iso, y = tissue.iso)) +
   annotate("text", x = Inf, y = -Inf, label = paste("R² =", round(r_squared2, 2)),
            hjust = 1.1, vjust = -1.5, size = 5) +  # Add R-squared to the plot
   annotate("text", x = Inf, y = -Inf, label = reg_eq,
-           hjust = 1.1, vjust = -3.5, size = 5) +  # Add regression equation
+           hjust = 1.05, vjust = -3.5, size = 5) +  # Add regression equation
   coord_equal()  
-ggsave("figures/RegressionmodelSrhair.png")
+ggsave("figures/Figure3A.png")
 
-#Teeth
+##Teeth
 #Tooth Enamel Oxygen Isoscape
 teethO <- subset(FTID, Element == 'teeth' & Isotope == 'd18O') %>% 
   rename(d18O  = Iso.Value)
@@ -210,9 +208,9 @@ y_range <- range(teethO$tissue.iso)
 axis_range <- range(c(x_range, y_range))  # Take the maximum range of both axes
 # Create the plot
 ggplot(data = teethO, aes(x = isoscape.iso, y = tissue.iso)) +  
-  geom_point(size = 3, shape = 21, color = "black", stroke = 0.5, fill = "#2A788EFF") +  
+  geom_point(size = 4, shape = 21, color = "black", stroke = 0.5, fill = "#348FA6") +  
   geom_abline(slope = 0.79, intercept = intercept_0.79, color = "black", linetype = "dashed", size = 1.5) +  # Line with slope = 0.79
-  geom_smooth(method = "lm", se = FALSE, color = "black", size = 0.75) +  # Add regression line (no confidence interval)
+  geom_smooth(method = "lm", se = FALSE, color = "black", size = 1.5) +  # Add regression line (no confidence interval)
   labs(
     y = expression(delta^{18} * O[italic(enamel)]), 
     x = expression(delta^{18} * O[italic(isoscape)])  
@@ -220,8 +218,8 @@ ggplot(data = teethO, aes(x = isoscape.iso, y = tissue.iso)) +
   theme(
     panel.background = element_rect(fill = 'white'),  
     plot.background = element_rect(fill = 'transparent', color = NA), 
-    axis.title.x = element_text(size = 18), 
-    axis.title.y = element_text(size = 18),  
+    axis.title.x = element_text(size = 18, margin = margin (t=10)), 
+    axis.title.y = element_text(size = 18, margin = margin (r=10)),  
     axis.text.x = element_text(size = 14), 
     axis.text.y = element_text(size = 14),  
     plot.title = element_text(hjust = 0.5, size = 16, face = "bold"), 
@@ -231,7 +229,7 @@ ggplot(data = teethO, aes(x = isoscape.iso, y = tissue.iso)) +
   annotate("text", x = Inf, y = -Inf, label = paste("R² =", round(r_squared4, 2)),  # Add R² annotation
            hjust = 1.1, vjust = -1.5, size = 5) +
   annotate("text", x = Inf, y = -Inf, label = reg_eq,  # Add regression equation annotation
-           hjust = 1.1, vjust = -3.5, size = 5) +  
+           hjust = 1.05, vjust = -3.5, size = 5) +  
   coord_cartesian(
     xlim = c(min(teethO$isoscape.iso), max(teethO$isoscape.iso)),  # Set x-axis limits
     ylim = c(min(teethO$tissue.iso), max(teethO$tissue.iso)),  # Set y-axis limits
@@ -241,7 +239,7 @@ ggplot(data = teethO, aes(x = isoscape.iso, y = tissue.iso)) +
   theme(
     aspect.ratio = 1  # Optional: Forces the plot to be square if using in RStudio or plotting window
   )
-ggsave("figures/regressionmodelOteeth.png")
+ggsave("figures/Figure5B.png")
 
 #Density Plots
 #Oxygen residuals by tooth group
@@ -272,7 +270,7 @@ ggplot() +
     legend.box.background = element_rect(fill = 'transparent'),  
     legend.text = element_text(size = 14),
     legend.title = element_text(size = 18),
-    axis.title.x = element_text(size = 18),
+    axis.title.x = element_text(size = 18, margin = margin(t=10)),
     axis.title.y = element_text(size = 18),
     axis.text.x = element_text(size = 14),
     axis.text.y = element_text(size = 14),
@@ -280,21 +278,24 @@ ggplot() +
     legend.justification = c("right", "top"),
     panel.border = element_rect(color = "black", fill = NA, size = 1)
   )
-ggsave("figures/Density_ToothgroupOresiduals.png")
+ggsave("figures/Figure7.png")
 
 #Oxygen residuals by Reference ID
+RefIDsupdate <-read_excel("data/FIT_RefIDsRefNo.xlsx")
+teethO <- teethO %>%
+  inner_join(RefIDsupdate, by = "Reference.ID")
 # Calculate counts per Reference.ID
 counts4 <- teethO %>%
-  filter(!is.na(Reference.ID)) %>%
-  group_by(Reference.ID) %>%
+  filter(!is.na(Reference_ID_2)) %>%
+  group_by(Reference_ID_2) %>%
   summarise(n = n())
 # Create new labels with counts
-new_labels4 <- paste0(counts4$Reference.ID, " (n=", counts4$n, ")")
-names(new_labels4) <- counts4$Reference.ID
+new_labels4 <- paste0(counts4$Reference_ID_2, " (n=", counts4$n, ")")
+names(new_labels4) <- counts4$Reference_ID_2
 # Plot with updated legend labels including counts
 ggplot() + 
-  geom_density(data = subset(teethO, !is.na(Reference.ID)), 
-               aes(x = residuals, color = Reference.ID), 
+  geom_density(data = subset(teethO, !is.na(Reference_ID_2)), 
+               aes(x = residuals, color = Reference_ID_2), 
                linewidth = 1, alpha = 0.7) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "black", size = 1)+
   scale_fill_viridis(discrete = TRUE, option = 'D') + 
@@ -309,9 +310,9 @@ ggplot() +
     plot.background = element_rect(fill = 'transparent', color = NA),
     legend.background = element_rect(fill = 'transparent'),
     legend.box.background = element_rect(fill = 'transparent'),
-    legend.text = element_text(size = 13),
-    legend.title = element_text(size = 16),
-    axis.title.x = element_text(size = 18),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 15),
+    axis.title.x = element_text(size = 18, margin = margin(t=10)),
     axis.title.y = element_text(size = 18),
     axis.text.x = element_text(size = 14),
     axis.text.y = element_text(size = 14),
@@ -319,7 +320,7 @@ ggplot() +
     legend.justification = c("right", "top"),
     panel.border = element_rect(color = "black", fill = NA, size = 1)
   )
-ggsave("figures/Density_refIDOresiduals.png")
+ggsave("figures/Figure6.png")
 
 #Quality Analysis for Oxygen Teeth, by reference and tooth group/type
 #Adjusting isotopic values by reference residuals
@@ -354,8 +355,7 @@ tOQA2 <- QA(teethoxy2, NAtapiso, bySite = TRUE, valiStation = 1, valiTime = 500,
                 recal = TRUE, by = 2, prior = NULL, mask = Bufnamap1, setSeed = TRUE, 
                 name = "Oxygen Teeth Reference")
 
-
-# QA 3, Bias correct usind residuals based on tooth group
+# QA 3, Bias correct using residuals based on Tooth group
 teethoxy3 <- vect(data.frame("lon" = teethO$Lon, "lat" = teethO$Lat, 
                              "d18O" = teethO$iso_Tooth_group, "d18O.sd" = teethO$d18O.sd), 
                   crs = "WGS84")
@@ -408,9 +408,9 @@ reg_eq <- "y = 0.33 + 0.53x"
 axis_range <- range(teethSr$isoscape.iso)
 # Create the plot
 ggplot(data = teethSr, aes(x = isoscape.iso, y = tissue.iso)) +  
-  geom_point(size = 3, shape = 21, color = "black", stroke = 0.5, fill = "#AADC32FF") + 
+  geom_point(size = 4, shape = 21, color = "black", stroke = 0.5, fill = "#AADC32FF") + 
   geom_abline(slope = 1, intercept = 0, color = "black", linetype = "dashed", size = 1.5) +  # One-to-one line
-  geom_smooth(method = "lm", se = FALSE, color = "black", size = 1) +  # Add regression line
+  geom_smooth(method = "lm", se = FALSE, color = "black", size = 1.5) +  # Add regression line
   labs(
     y = expression({}^{87} * Sr / {}^{86} * Sr[italic(enamel)]),  
     x = expression({}^{87} * Sr / {}^{86} * Sr[italic(isoscape)])  
@@ -418,8 +418,8 @@ ggplot(data = teethSr, aes(x = isoscape.iso, y = tissue.iso)) +
   theme(
     panel.background = element_rect(fill = 'white'),  
     plot.background = element_rect(fill = 'transparent', color = NA), 
-    axis.title.x = element_text(size = 18), 
-    axis.title.y = element_text(size = 18),  
+    axis.title.x = element_text(size = 18, margin = margin(t=10)), 
+    axis.title.y = element_text(size = 18, margin = margin(t=10)),  
     axis.text.x = element_text(size = 14),  
     axis.text.y = element_text(size = 14), 
     plot.title = element_text(hjust = 0.5, size = 16, face = "bold"), 
@@ -427,15 +427,55 @@ ggplot(data = teethSr, aes(x = isoscape.iso, y = tissue.iso)) +
     panel.border = element_rect(color = "black", fill = NA, size = 1) 
   ) +  
   annotate("text", x = max(axis_range), y = min(axis_range), label = paste("R² =", round(r_squared, 2)),  # Annotate R²
-           hjust = 1.1, vjust = -0.5, size = 5) +  
+           hjust = .83, vjust = 0.2, size = 5) +  
   annotate("text", x = max(axis_range), y = min(axis_range), label = reg_eq,  # Annotate regression equation
-           hjust = 1.1, vjust = -2.5, size = 5) +  
+           hjust = .91, vjust = -1.6, size = 5) +  
   coord_equal(  # Use only this to ensure equal scaling of axes
     xlim = axis_range,  
     ylim = axis_range  
   )
-ggsave("figures/RegressionmodelSrteeth.png")
+ggsave("figures/Figure3B.png")
 
+#Density plot of Sr with Reference IDs
+teethSr <- teethSr %>%
+  inner_join(RefIDsupdate, by = "Reference.ID")
+# Calculate counts 
+counts_Sr <- teethSr %>%
+  filter(!is.na(Reference_ID_2)) %>%
+  group_by(Reference_ID_2) %>%
+  summarise(n = n())
+# Create new labels with counts
+new_labels_Sr <- paste0(counts_Sr$Reference_ID_2, " (n=", counts_Sr$n, ")")
+names(new_labels_Sr) <- counts_Sr$Reference_ID_2
+# Plot with updated legend labels and all Reference.ID counts
+ggplot() + 
+  geom_density(data = subset(teethSr, !is.na(Reference_ID_2)), 
+               aes(x = residuals, color = Reference_ID_2), 
+               linewidth = 1, alpha = 0.7)+
+  geom_vline(xintercept = 0, linetype = "dashed", color = "black", size = 1) +
+  scale_fill_viridis(discrete = TRUE, option = 'D') + 
+  scale_color_viridis(discrete = TRUE, option = 'D', labels = new_labels_Sr) + 
+  labs(
+    x = expression({}^{87} * Sr / {}^{86} * Sr[italic(enamel)] ~ "residuals"), 
+    y = "Density", 
+    color = "Reference ID"  # Legend title for color
+  ) + 
+  theme(
+    panel.background = element_rect(fill = 'white'),
+    plot.background = element_rect(fill = 'transparent', color = NA),
+    legend.background = element_rect(fill = 'transparent'),
+    legend.box.background = element_rect(fill = 'transparent'),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 15),
+    axis.title.x = element_text(size = 18, margin = margin(t=10)),
+    axis.title.y = element_text(size = 18),
+    axis.text.x = element_text(size = 14),
+    axis.text.y = element_text(size = 14),
+    legend.position = c(0.05, 0.95),
+    legend.justification = c("left", "top"),
+    panel.border = element_rect(color = "black", fill = NA, size = 1)
+  )
+ggsave("figures/Figure4.png")
 
 
     

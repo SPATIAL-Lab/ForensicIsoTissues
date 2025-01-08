@@ -1,6 +1,6 @@
 library(readxl);library(dplyr)
 
-#Read in dataset from data file from Github and merge sheets together
+#Read in dataset xlsx from data file from GitHub and merge sheets together
 FData1 <-read_excel("data/FIT_Dataset.xlsx", sheet = "Individual")
 FData2 <-read_excel("data/FIT_Dataset.xlsx", sheet = "Site")
 FData3 <-read_excel("data/FIT_Dataset.xlsx", sheet = "Sample")
@@ -11,10 +11,10 @@ Comp3 <-merge(Comp2,FData4,by= "Sample.ID")
 #convert lat and long to numeric
 Comp3$Lat= as.numeric(Comp3$Lat)
 Comp3$Lon= as.numeric(Comp3$Lon)
-#Select needed data columns
+#Select needed data columns, this makes data easier to read and visualize
 ForensicTisIsoData <-select(Comp3,1:3,5:15,17:21,24:29,30,32:34) 
 rm( FData1, FData2, FData3, FData4, Comp1, Comp2, Comp3)
-#Get rid of NA in Lat and Lon
+#Get rid of NAs in Lat and Lon
 ForensicTisIsoData =ForensicTisIsoData[!is.na(ForensicTisIsoData$Lat),]
 FTID <-ForensicTisIsoData
 
@@ -53,10 +53,10 @@ summstats4 <- FTID %>%
 
 #Remove cities routinely dropped from isoscapes
 FTID<- subset(FTID, City!="Tofino" & City!="Honolulu")
-#subset and remove fingernail and bone data
+#Subset data and remove fingernail and bone data
 FTID <- subset(FTID, Element=="hair"|Element=="teeth")
-#Make sure not duplicates have snuck in
+#Make sure there are no duplicates
 FTID<- FTID[!duplicated(FTID$Data.ID), ]
-#Write data to csv to run FITMapping and FITTapiso
+#Write data to csv to run FITMapping and FITTapiso, or run it from the FTID dataframe
 write.csv(FTID, file="data/ForensicTissue.csv")
 
