@@ -31,7 +31,7 @@ ggplot() +
         legend.title = element_text(color = 'black'),
         legend.box.margin=margin(5,5,5,5), 
         legend.position = c(0.15, 0), legend.justification = c(0, 0)) 
-ggsave("figures/Figure1B.png")
+ggsave("figures/Figure2B.png")
 
 
 #Create Map, distribution of strontium hair (known and assumed)
@@ -52,7 +52,7 @@ ggplot() +
         legend.title = element_text(color = 'black'),
         legend.box.margin=margin(5,5,5,5), 
         legend.position = c(0.15, 0),legend.justification = c(0, 0))
-ggsave("figures/Figure1A.png")
+ggsave("figures/Figure2A.png")
 
 
 #Create Map, distribution of oxygen tooth enamel (known and assumed)
@@ -72,7 +72,7 @@ ggplot() +
   theme(legend.box.background=element_rect(),
         legend.box.margin=margin(5,5,5,5),
         legend.position = c(0.15, 0),legend.justification = c(0, 0))
-ggsave("figures/Figure1D.png")
+ggsave("figures/Figure2D.png")
 
 #CreateMap, distribution of strontium tooth enamel (known and assumed)
 ggplot() + 
@@ -91,7 +91,7 @@ ggplot() +
   theme(legend.box.background=element_rect(),
         legend.box.margin=margin(5,5,5,5),
         legend.position = c(0.15, 0),legend.justification = c(0, 0))
-ggsave("figures/Figure1C.png")
+ggsave("figures/Figure2C.png")
 
 
 
