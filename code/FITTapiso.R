@@ -1,5 +1,5 @@
 library (readr); library(assignR); library(terra); library(ggplot2); library(viridis);
-library(dplyr); library(tidyterra); library(geodata); library(car): library(ggpubr)
+library(dplyr); library(tidyterra); library(geodata); library(car); library(ggpubr); library(readxl)
 
 #Isoscapes, Statistical test and Quality Analysis
 #This script is used after running the FITDataSetup script, 
